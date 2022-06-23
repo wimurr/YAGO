@@ -10,10 +10,13 @@
 %  cd ~/Documents/Coding/Prolog/Semantic_Web/YAGO/YAGO1/
 connect :- cd('/users/umurrwi/Documents/Coding/Prolog/Semantic_Web/YAGO/YAGO1/').
 
-:- use_module(library('semweb/rdf_db')).
-:- use_module(library('semweb/turtle')).
-:- use_module(library('semweb/rdf_portray')).     % supports use of prefixes
+:- use_module(library('semweb/rdf11')).              % use new RDF 1.1 spec, incorporates older rdf_db
+:- use_module(library('semweb/turtle')).              % to read in TTL triples
 :- use_module(library('semweb/rdf_litindex')).    % provides better access for literals
+:- use_module(library('semweb/rdf_portray')).     % supports use of prefixes
+
+% Use concise prefixes when showing triples.
+:- rdf_portray_as(prefix:id).
 
 % Increase stack limit. Only needed for show_stats currently.
 :-set_prolog_flag(stack_limit, 2_147_483_648). 
@@ -50,13 +53,17 @@ q2 :-
         rdf(X,Y,yago:'Elvis_Presley'),
         format('~s --~s--> Evlis Presley.~n',[X,Y]).      
 
-optimize :- writeln('Warming indices...'),
-            time(warm_indexes),
-            writeln('Warming [s,p,o,sp,po] indices specifically...'),
-            time(rdf_warm_indexes([s,p,o,sp,po])),
-            writeln('GC and optimizing indices...'),
-            time(rdf_gc),
-            writeln('Ready to go now!').
+%----------------------------------
+%  Goal: Show Statistics and Kinds of Facts
+% ----------------------------------
+
+
+% show what prefixes are currently defined.
+show_prefixes :-
+        rdf_current_prefix(Prefix, Expansion),
+        format("~a = ~a.",[Prefix,Expansion]),
+                   nl,
+                   fail.
 
 count_subject_resources(N) :- setof(X,rdf_subject(X),Xs),length(Xs,N).
 count_all_resources(N) :- setof(X,rdf_resource(X),Xs),length(Xs,N).
@@ -64,15 +71,25 @@ count_predicates(N) :- setof(X,rdf_current_predicate(X),Xs),length(Xs,N).
 count_literals(N) :- setof(X,rdf_current_literal(X),Xs),length(Xs,N).
 count_graph(N) :- setof(X,rdf_graph(X),Xs),length(Xs,N).
 
-show_stats :- count_subject_resources(N),
-              format('Found ~d subject resources.~n',[N]),
-              count_predicates(P),
-              format('Found ~d subject resources.~n',[P]),
-              count_literals(L),
-              format('Found ~d literals.~n',[L]),
-              count_all_resources(All),
-              format('Altogether, found ~d resources.~n',[All]),
-              triples.
+show_all_stats :-
+        count_subject_resources(N),
+        format('Found ~d subject resources.~n',[N]),
+        count_predicates(P),
+        format('Found ~d subject resources.~n',[P]),
+        count_literals(L),
+        format('Found ~d literals.~n',[L]),
+        count_all_resources(All),
+        format('Altogether, found ~d resources.~n',[All]),
+        show_triples_stats.
+
+% Find the number of RDF triples present.
+show_triples_stats :-
+        rdf_statistics(triples(Count)),
+        format("Loaded ~d triples in total.~n",[Count]).
+
+%----------------------------------
+%  Goal: Performance Improvements
+% ----------------------------------
 
 % Based on the counts above we may want to adjust the defaults below.
 set_hash_parameters :-
@@ -86,12 +103,16 @@ set_hash_parameters :-
       rdf_set(hash(sg,  size, 1048576)),
       rdf_set(hash(pg,  size, 2048)).
 
-% Find the number of RDF triples present.
-triples :- rdf_statistics(triples(Count)),
-             write("Loaded "),write(Count),write(" triples in total."),
-             nl.
+optimize :- writeln('Warming indices...'),
+            time(warm_indexes),
+            writeln('Warming [s,p,o,sp,po] indices specifically...'),
+            time(rdf_warm_indexes([s,p,o,sp,po])),
+            writeln('GC and optimizing indices...'),
+            time(rdf_gc),
+            writeln('Ready to go now!').
 
 /* Add prefixes for:
+
 @base <http://yago-knowledge.org/resource/> .
 @prefix dbp: <http://dbpedia.org/ontology/> .
 @prefix owl: <http://www.w3.org/2002/07/owl#> .
@@ -109,14 +130,6 @@ rdf_register_prefix(skos, 'http://www.w3.org/2004/02/skos/core#')
 rdf_register_prefix(xsd, 'http://www.w3.org/2001/XMLSchema#')
 
 */
-
-
-% show what prefixes are currently defined.
-show_prefixes :- rdf_current_prefix(Prefix, Expansion),
-                   write(Prefix),write(' = '),write(Expansion),
-                   nl,
-                   fail.
-show_prefixes.
 
 % to speed up performance, we call...
 warm_indexes :- 

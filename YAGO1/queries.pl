@@ -2,7 +2,81 @@
 queries to show what works.
 
 ----------------------------------
-Predicates to Determine what Resource to Use
+   Goal: Get an RDF fact from a Resource
+----------------------------------
+
+rdf(yago:'Colorado',Y,Z).   
+
+----------------------------------
+  Goal: Show Statistics and Kinds of Facts
+----------------------------------
+
+get_all_rdf_stats.
+
+show_unique_relations.   
+
+show_prefixes.
+   
+----------------------------------
+     Goal: Get All Triples for a Resource
+----------------------------------
+
+get_next_triple_for_resource(+Resource,-Next_triple)
+
+Get next triple in which the resource is either a subject or an object.
+Example: get_next_triple_for_resource(yago:'Colorado',Triple).
+
+get_all_triples_for_resource(+Resource,-Triples)
+Example: get_all_triples_for_resource(yago:'Denver,_Colorado',Triples).
+
+Find all triples in which a resource occurs, either as subject or object.
+
+print_all_triples_for_resource(+Resource)
+Example: print_all_triples_for_resource(yago:'Elvis_Presley').
+
+Find all triples in which a resource occurs, either as subject or object then print them.
+
+----------------------------------
+     Goal: Get Facts Describing a Resource
+----------------------------------
+
+Facts are the same as triples except we screen for relevance, e.g., we suppress information about
+geographic resources along with relations we deem uninteresting (label, family name, given name, and
+redirection).
+
+They are also printed in a more English-like manner below.   
+
+print_all_relevant_facts_for_resource(+Resource)
+
+Find all triples in which a resource occurs, then print out the triples in a more plain English
+format, as if presenting facts.
+
+Each triple part (resource) is printed in a more English and fact-like manner, if possible.
+
+----------------------------------
+    Goal: Map from a Resource to a Name
+----------------------------------
+
+best_name_for_resource(+Resource,-Name) is semidet
+
+and returns the best name for a resource using heuristics:
+ 1. Use any name given as explicitly preferred.
+ 2. Otherwise use rdfs:label, first trying just the string, with no nationality.
+ 3. Otherwise use rdfs:label, allowing nationality, using 'us' first.
+ 4. Otherwise use rdfs:label, allowing nationality, using any nationality.
+
+----------------------------------
+  Goal: to Map from a Name to a Resource
+----------------------------------
+
+?- any_resource_for_name('Denver',X).
+X = yago:'Denver,_Colorado' ;
+X = yago:'Denver,_Pennsylvania' ;
+X = yago:'Denver,_Indiana' .
+
+?- all_resources_for_name("Denver",Rs).
+Rs = [yago:'Denver,_Colorado', yago:'Denver,_Pennsylvania', yago:'Denver,_Indiana', yago:'Denver,_Iowa', yago:'Denver,_Missouri', yago:'Denver,_Norfolk', yago:'Denver,_Illinois', yago:'Denver,_North_Carolina', yago:'Denver,_Ohio'|...].
+
 ----------------------------------
 
 These take a name, which is a string, such as "Lincoln" and then either find one or all resources that have that name as a tag. They can either
@@ -49,6 +123,14 @@ separate functions.
 best_resource_for_name(+Name,-Resource) calls best_resources_for_name(+Name,-Resource),
 which in turn calls any_resource_for_name(+Name,-Resource) until all possible matches are found,
 and then sorts those resources by "page rank" (the number of facts found in the YAGO kb).
+
+----------------------------------
+     Goal: Get all Facts for a Name
+----------------------------------
+
+
+
+----------------------------------
 
 KEY NOTES:
 
@@ -132,11 +214,13 @@ as the proper syntax for a literal match is literal(?Query,-Match).
 */
 
 
-facts(Name) :- best_show_facts_best_first(Name).
+/*
+==============================================================================
+                   PREDICATES TO GET GENERAL INFO
+==============================================================================
+*/
 
-triples(Name) :- best_show_triples_best_first(Name).
-
-stats :-
+get_all_rdf_stats :-
        rdf_statistics(triples(N)),
        format("YAGO 1 has ~d triples in it.~n",[N]),
        rdf_statistics(resources(R)),
@@ -146,15 +230,20 @@ stats :-
        rdf_statistics(literals(L)),
        format("YAGO 1 has ~d literals in it.~n",[L]).
 
-/*
-==============================================================================
-                   PREDICATES TO GET GENERAL INFO
-==============================================================================
-*/
+unique_relations(Ps) :- findall(P,rdf_db:rdf_current_predicate(P),Ps).
+
+show_unique_relations :-
+        unique_relations(Ps),
+        print_all(Ps).
+
+get_facts_for_name(Name) :- best_show_facts_best_first(Name).
+
+get_triples_for_name(Name) :- best_show_triples_best_first(Name).
 
 % find_relations(-X,-Y,+Name)
-find_relations(X,Y,Name) :-
+describe_name(X,Y,Name) :-
         best_resource_for_name(Name,Resource),
+
         rdf(X,Y,Resource),
         not(memberchk(Y,['http://www.w3.org/2000/01/rdf-schema#label',
                          'http://yago-knowledge.org/resource/redirectedFrom',
@@ -184,23 +273,73 @@ describe(yago:'Seattle'). % yeields 1389 facts
 
 */
 
-:- rdf_meta describe(r).
 
 % describe(+Resource) finds all triples where Resource is either the subject or object
 % part of the triple and then prints them.
 describe(Resource) :- setof(Triple,describe(Resource,Triple),Triples), print_triples(Triples).
 
+:- rdf_meta print_all_triples_for_resource(r).
+print_all_triples_for_resource(Resource) :-
+        get_all_triples_for_resource(Resource,All_triples),
+        print_triples(All_triples),
+        !.
+
 % describe(+Resource,-Triple_as_list) finds all triples where the Resource is the subject
 % or Object part and binds a list representing the arguments of the triple to the output.
-describe(Resource,[Resource,Y,Z]) :- rdf(Resource,Y,Z).
-describe(Resource,[A,B,Resource]) :- rdf(A,B,Resource).
 
-/* 
-info prints all triples, one at a time, where the resource is either a subject or an object. 
+:- rdf_meta get_all_triples_for_resource(r,-).
+
+% get all unique triples (as [S,P,O] lists) for Resource.
+get_all_triples_for_resource(Resource,All_triples) :-
+        setof(Triple,get_next_triple_for_resource(Resource,Triple),All_triples),
+        !.
+
+get_all_triples_for_resource(Resource,[]).
+
+% get_next_triple_for_resource(+Resource,-Next_triple) is multi
+% and returns the next triple where the Resource is either subject or object in an RDF triple.
+% Each triple is returned as a [S, P, O] list.
+
+:- rdf_meta get_next_triple_for_resource(r,-).
+
+get_next_triple_for_resource(Resource,Next_Triple) :- 
+        get_next_triple_w_resource_as_subject(Resource,Next_Triple).
+
+get_next_triple_for_resource(Resource,Next_Triple) :-
+        get_next_triple_w_resource_as_relation(Resource,Next_Triple).
+
+get_next_triple_for_resource(Resource,Next_Triple) :-
+        get_next_triple_w_resource_as_object(Resource,Next_Triple).
+
+get_next_triple_w_resource_as_subject(Resource,[Resource,Y,Z]) :-
+        rdf(Resource,Y,Z).
+
+get_next_triple_w_resource_as_relation(Resource,[X,Resource,Z]) :-
+        rdf(X,Resource,Z).
+
+get_next_triple_w_resource_as_object(Resource,[X,Y,Resource]) :-
+        rdf(X,Y,Resource).
+
+/*
+==============================================================================
+         INTERFACE PREDICATES TO MAP FROM  YAGO RESOURCES TO TEXT STRING NAMES
+==============================================================================
 */
 
-:- rdf_meta info(r).
-info(X) :- describe(X),fail.
+:- rdf_meta best_name_for_resource(r,-).
+
+% best_name_for_resource(+Resource,-Name) is semidet
+best_name_for_resource(Resource,Name) :-
+        rdf(Resource,skos:'prefLabel',Name), !.
+
+best_name_for_resource(Resource,Name) :-
+        rdf(Resource,rdfs:'label',Name^^xsd:string), !.
+
+best_name_for_resource(Resource,Name) :-
+        rdf(Resource,rdfs:'label',Name@en), !.
+
+best_name_for_resource(Resource,Name) :-
+        rdf(Resource,rdfs:'label',Name@Lang), !.
 
 /*
 ==============================================================================
@@ -209,7 +348,7 @@ info(X) :- describe(X),fail.
 */
 
 
-% any_resource_for_name(+Name,-Resource) is nondet
+% any_resource_labeling_name(+Name,-Resource) is nondet
 
 % Find all resources with the given Name as their label.
 %
@@ -223,8 +362,14 @@ info(X) :- describe(X),fail.
 %         rdf(Concept,rdfs:'label',literal(substring(Name),Match)).
 % Match binds with what was matched.
 
-any_resource_for_name(Name,Resource) :-
-        rdf(Resource,rdfs:'label',literal(exact(Name),Match)).
+any_resource_labeling_name(Name,Resource) :-
+        atom(Name),
+        atom_string(Name,Name_as_string),
+        rdf(Resource,rdfs:'label',Name_as_string).
+
+any_resource_labeling_name(Name,Resource) :-
+        string(Name),
+        rdf(Resource,rdfs:'label',Name).
 
 % all_resources_for_name(+Name,-Resources) is det
 % finds a bag of all unique possible resources for a name (e.g., there are several "Bill Murray" resources).
@@ -246,23 +391,6 @@ best_resources_for_name(Name,Resources) :- name_of_resource_via_page_rank(Name,R
 % Use preferences and page rank heuristics to offer up the resource for a name.
 % Can offer up the next best solution to a query if the first fails.
 single_best_resource_for_name(Name,Resource) :- once(best_resource_for_name(Name,Resource)).
-
-/*                               LITERAL PARTIAL MATCHING
-
-Sometimes we do not know what the proper literal string is to find a resource.
-For example, 'Mesa Verde' will not find 'Mesa Verde National Park' if we require
-an exact match. The following predicates help find alternate candidates when we
-only know a substring.
-*/
-
-% candidate_for(+Name,-Resource) returns a candidate with a literal string containing the name.
-candidate_for(Name,Resource) :- rdf(X,Y,literal(substring(Name),Resource)).
-
-% candidates_for(+Name,-Resources) returns all candidates with literal strings containing the name.
-candidates_for(Name,Resources) :- setof(Resource,candidate_for(Name,Resource),Resources).
-
-% print_candidates_for(+Name) prints all candidates with literal strings containing the name.
-print_candidates_for(Name) :- time((candidates_for(Name,Resources),print_all(Resources))).
 
 /*
 ==============================================================================
@@ -313,14 +441,13 @@ subject and the name the object in the triple.
 Find the best name to use for a resource in text generation.
 <London>	skos:prefLabel	"London"@eng .
 
-preferred_label_for_concept(Name,Resource) :- rdf(Resource,skos:'prefLabel',literal(lang(eng,Name))),!.
 preferred_label_for_concept(Name,Resource) :- rdf(Resource,skos:'prefLabel',Name).
 
 % Find the most likely place or item being talked about, e.g., for "London", we want to match
 % <London>	yago:'isPreferredMeaning'	"London"@eng .
 % and not get London, Ontario or somewhere else. 
-preferred_concept_for_label(Name,Resource) :- rdf(Resource,yago:'isPreferredMeaning',literal(lang(eng,Name))).
-preferred_concept_for_label(Name,Resource) :- rdf(Resource,yago:'isPreferredMeaning',literal(Name)).
+
+preferred_concept_for_label(Name,Resource) :- rdf(Resource,yago:'isPreferredMeaning',Name).
 
 */
 
@@ -368,9 +495,10 @@ best_match_for_name(Name,Resource) :- best_first_concepts_for_name(Name,Resource
 page_ranked_resources prints the best resources considering page rank (number of facts) only.
 */
 
-page_ranked_resources(Name) :- name_of_resource_via_page_rank(Name,Page_Ranked_Resources),
-                               print('The best matching resources for '),print(Name),print(' are:'),nl,
-                               print_all(Page_Ranked_Resources).
+page_ranked_resources(Name) :-
+        name_of_resource_via_page_rank(Name,Page_Ranked_Resources),
+        print('The best matching resources for '),print(Name),print(' are:'),nl,
+        print_all(Page_Ranked_Resources).
 
 /* Given a Name return the resources that most likely match in order,
 where the order is determined by the number of facts found for each
@@ -439,7 +567,7 @@ gather_and_sort_resources_via_number_of_facts(Resources,Page_Ranked_Resources) :
 % pairs, one for each resource, gathered into a list.
 generate_resource_number_facts_pairs([],[]).
 generate_resource_number_facts_pairs([Resource|Other_Resources],[[Resource,N]|Facts_For_Others_Resources]) :-
-        all_facts_for_resource(Resource,Facts_For_Resource),
+        get_all_facts_for_resource(Resource,Facts_For_Resource),
         length(Facts_For_Resource,N),
         generate_resource_number_facts_pairs(Other_Resources,Facts_For_Others_Resources).
 
@@ -507,17 +635,18 @@ facts first.
 This has the same result as taking the page ranked resources and
 gathering their facts, but only gathers the facts once, not twice.
 */
-show_facts_best_first(Name) :- all_resources_for_name(Name,Matching_Resources),
-                               gather_and_sort_facts(Matching_Resources,Facts),
-                               show_facts(Facts).
+show_facts_best_first(Name) :-
+        all_resources_for_name(Name,Matching_Resources),
+        gather_and_sort_facts(Matching_Resources,Facts),
+        show_facts(Facts).
 
 % Print out all the facts for a name or label as triples.
 % When the same name can name multiple resources return
 % the resources with the most triples first.
-show_triples_best_first(Name) :- all_resources_for_name(Name,Matching_Resources),
-                                 gather_and_sort_facts(Matching_Resources,Facts),
-                                 print_triples(Facts).
-
+show_triples_best_first(Name) :-
+        all_resources_for_name(Name,Matching_Resources),
+        gather_and_sort_facts(Matching_Resources,Facts),
+        print_triples(Facts).
 
 /* gather_and_sort_facts/2 takes a list of resources and
 creates a list of triples. For each triple,
@@ -540,12 +669,11 @@ gather_and_sort_facts(Resources,Facts) :-
         sort(2,@>=,Resource_Number_Facts_Triples,Sorted_Resource_Number_Facts_Triples),
         take_facts_and_flatten(Sorted_Resource_Number_Facts_Triples,Facts).
 
-
 % generate_resource_number_facts_triples essentially creates [Resource,Number,Facts]
 % triplets, one for each resource, gathered into a list.
 generate_resource_number_facts_triples([],[]).
 generate_resource_number_facts_triples([Resource|Other_Resources],[[Resource,N,Facts_For_Resource]|Facts_For_Others_Resources]) :-
-        all_facts_for_resource(Resource,Facts_For_Resource),
+        get_all_facts_for_resource(Resource,Facts_For_Resource),
         length(Facts_For_Resource,N),
         generate_resource_number_facts_triples(Other_Resources,Facts_For_Others_Resources).
 
@@ -557,7 +685,7 @@ take_facts_and_flatten1([],All_Facts,All_Facts).
 take_facts_and_flatten1([[Resource,Number,Facts]|Rest],Facts_So_Far,All_Facts) :-
         % write(Resource),write(' has '),write(Number),write(' facts.'),nl,
         append(Facts_So_Far,Facts,Updated_Fact_List),
-        % write('Facts so far...'),nl, print_triples(Updated_Fact_List),
+        % write('Facts so far...'),nl, show_triples(Updated_Fact_List),
         !,
         take_facts_and_flatten1(Rest,Updated_Fact_List,All_Facts).
 
@@ -567,11 +695,12 @@ Rank order the referents by likelihood.
 Then for each referent print out facts for it in English.
 */
 
-best_show_facts_best_first(Name) :- very_best_resources(Name,Ordered_Resources),
-                                    !,
-                                    member(Resource,Ordered_Resources),
-                                    print_all_facts_for_resource(Resource),
-                                    fail.
+best_show_facts_best_first(Name) :-
+        very_best_resources(Name,Ordered_Resources),
+        !,
+        member(Resource,Ordered_Resources),
+        print_all_facts_for_resource(Resource),
+        fail.
 best_show_facts_best_first(Name).
 
 
@@ -581,11 +710,12 @@ Rank order the referents by likelihood.
 Then for each referent print out triples for it.
 */
 
-best_show_triples_best_first(Name) :- very_best_resources(Name,Ordered_Resources),
-                                      !,
-                                      member(Resource,Ordered_Resources),
-                                      print_all_triples_for_resource(Resource),
-                                      fail.
+best_show_triples_best_first(Name) :-
+        very_best_resources(Name,Ordered_Resources),
+        !,
+        member(Resource,Ordered_Resources),
+        print_all_triples_for_resource(Resource),
+        fail.
 best_show_triples_best_first(Name).
 
 /*
@@ -594,6 +724,10 @@ best_show_triples_best_first(Name).
                 PREDICATES TO GET FACTS GIVEN RESOURCES
 ==============================================================================
 
+Facts are the same as triples except we screen for relevance, e.g., we suppress information about
+geographic resources along with relations we deem uninteresting (label, family name, given name, and
+redirection).
+
 */
 
 
@@ -601,41 +735,31 @@ best_show_triples_best_first(Name).
 % pick up some metonymies, e.g., 'Colorado' can be referred to by the label 'Denver',
 % so we may want filter these out by, e.g., noting that the preferred label for 'Colorado'
 % is not 'Denver', but instead 'Colorado'.
-fact(Name,[Concept,Relation,Object]) :- any_resource_for_name(Name,Concept),
-                                        fact_for_concept(Concept,[Concept,Relation,Object]).
 
-fact_for_concept(Concept,[Concept,Relation,Object]) :- rdf(Concept,Relation,Object),
-                                                       % we don't want facts such as 'Lincoln has label Lincoln'.
-                                                       not(is_relationship_for_uninteresting_fact(Relation)),
-                                                       % we don't want facts such as 'yago:geoentity_Abraham_Lincoln_3569752 has latitude 22.8.'
-                                                       not(is_geo_resource(Concept)).
+get_relevant_fact_for_name(Name,[S,P,O]) :-
+        any_resource_for_name(Name,Resource),
+        get_relevant_fact_for_resource(Resource,[S,P,O]).
+
+get_relevant_fact_for_resource(Resource,[S,P,O]) :-
+
+        % generate
+        get_next_triple_for_resource(Resource,[S,P,O]),
+
+         % test: we don't want facts such as 'Lincoln has label Lincoln'.
+        not(is_relationship_for_uninteresting_fact(P)),
+
+         % test: we don't want facts such as 'yago:geoentity_Abraham_Lincoln_3569752 has latitude 22.8.'
+        not(is_geo_resource(Resource)).
 
 % If we are suppressing some kinds of facts, e.g., we do not want facts such as 'yago:geoentity_Abraham_Lincoln_3569752 has latitude 22.8.'
 % to appear, then the setof in the first rule below may fail, so we need the second clause.
-:- rdf_meta all_facts_for_resource(r,-).
-all_facts_for_resource(Resource,Facts) :-
-        setof([Concept,Relation,Object],
-              fact_for_concept(Resource,[Concept,Relation,Object]),
+:- rdf_meta get_all_relevant_facts_for_resource(r,-).
+
+get_all_relevant_facts_for_resource(Resource,Facts) :-
+        setof([S,P,O],
+              get_relevant_fact_for_resource(Resource,[S,P,O]),
               Facts),!.
-all_facts_for_resource(Resource,[]).
-
-% Find facts about Concept, WHEREEVER it may appear in a relation.
-% example: facts_about_concept('http://yago-knowledge.org/resource/Bill_Murray',All).
-% ...or, more succinctly...
-% example: facts_about_concept(yago:'Bill_Murray',All).
-
-:- rdf_meta facts_about_concept(r,-).
-facts_about_concept(Concept,All) :-facts1(Concept,As_Subject),
-                                   facts2(Concept,As_Predicate),
-                                   facts3(Concept,As_Object),
-                                   append([As_Subject,As_Predicate,As_Object],All).
-
-
-% Find facts about Concept, when it is in different positions.
-% example: facts1('http://yago-knowledge.org/resource/Bill_Murray',Subject_Position).
-facts1(Concept,As_Subject) :-findall([Concept,Y,Z],rdf(Concept,Y,Z),As_Subject).
-facts2(Concept,As_Predicate) :-findall([X,Concept,Z],rdf(X,Concept,Z),As_Predicate).
-facts3(Concept,As_Object) :-findall([X,Y,Concept],rdf(X,Y,Concept),As_Object).
+get_all_relevant_facts_for_resource(Resource,[]).
 
 /*
 ==============================================================================
@@ -646,15 +770,16 @@ facts3(Concept,As_Object) :-findall([X,Y,Concept],rdf(X,Y,Concept),As_Object).
 
 % we don't want facts such as 'Lincoln has label Lincoln'.
 is_relationship_for_uninteresting_fact(Relation) :-
-        memberchk(Relation,['http://www.w3.org/2000/01/rdf-schema#label',
-                            'http://yago-knowledge.org/resource/redirectedFrom',
-                            'http://www.w3.org/2000/01/rdf-schema#label',
-                            'http://yago-knowledge.org/resource/hasGivenName',
-                            'http://yago-knowledge.org/resource/hasFamilyName']).
-
+        memberchk(Relation,
+                  ['http://www.w3.org/2000/01/rdf-schema#label',
+                   'http://yago-knowledge.org/resource/redirectedFrom',
+                   'http://www.w3.org/2000/01/rdf-schema#label',
+                   'http://yago-knowledge.org/resource/hasGivenName',
+                   'http://yago-knowledge.org/resource/hasFamilyName']).
 
 % we don't want facts such as 'yago:geoentity_Abraham_Lincoln_3569752 has latitude 22.8.'
-is_geo_resource(Resource) :- atom_starts_with_prefix('http://yago-knowledge.org/resource/geoentity_',Resource).
+is_geo_resource(Resource) :-
+        atom_starts_with_prefix('http://yago-knowledge.org/resource/geoentity_',Resource).
 
 /*
 ==============================================================================
@@ -664,65 +789,70 @@ is_geo_resource(Resource) :- atom_starts_with_prefix('http://yago-knowledge.org/
 
 
 /*
-print_all_facts_for_resource/1 and print_all_triples_for_resource/1 are used to
+print_all_relevant_facts_for_resource/1 and print_all_triples_for_resource/1 are used to
 print either facts in English or triples for a given resource.
 */
 
-print_all_facts_for_resource(Resource) :-
-        all_facts_for_resource(Resource,Facts),
+:- rdf_meta print_all_relevant_facts_for_resource(r).
+print_all_relevant_facts_for_resource(Resource) :-
+        get_all_relevant_facts_for_resource(Resource,Facts),
         show_facts(Facts),
         !.
                                     
-print_all_triples_for_resource(Resource) :-
-        all_facts_for_resource(Resource,Facts),
-        print_triples(Facts),
-        !.
-
 % show_facts(+Facts) prints out a list of facts nicely. Each fact should be a grounded list
 % corresponding to an RDF fact: [Subject,Predicate,Object].
 
 show_facts([Fact|Rest]) :- show_fact(Fact),nl,show_facts(Rest).
 show_facts([]) :- nl.
 
-show_fact([Subject,Predicate,Object]) :- show_fact_part(Subject),
-                                         write(' '),
-                                         show_fact_part(Predicate),
-                                         write(' '),
-                                         show_fact_part(Object),
-                                         write('.').
-
-
-% Handle literals
-show_fact_part(literal(lang(eng,Name))) :- write(Name),!.
-show_fact_part(literal(type('http://www.w3.org/2001/XMLSchema#date',Date_String))) :- write(Date_String),!.
-show_fact_part(literal(type('http://yago-knowledge.org/resource/degrees',Degrees))) :- write(Degrees),!.
-show_fact_part(literal(type('http://yago-knowledge.org/resource/km2',People))) :- format('~w people per square kilometer',[People]),!.
-show_fact_part(literal(type('http://www.w3.org/2001/XMLSchema#integer',Integer))) :- write(Integer),!.
-show_fact_part(literal(Name)) :- write(Name),!.
+show_fact([Subject,Predicate,Object]) :-
+        show_fact_part(Subject),
+        write(' '),
+        show_fact_part(Predicate),
+        write(' '),
+        show_fact_part(Object),
+        write('.').
 
 % Handle resources with generic naming methods (e.g., yago:'wikicat_20th-century_mathematicians',
 % yago:wikicat_Academics_of_the_University_of_Cambridge, yago:wikicat_Logicians, etc.)
-show_fact_part(Yago_Wiki_Category) :- atom(Yago_Wiki_Category),
-                                      yago_wiki_category(Yago_Wiki_Category,Category_Name),
-                                      format('member of the Wikipeda category ~a',[Category_Name]).
+
+show_fact_part(Yago_Wiki_Category) :-
+        atom(Yago_Wiki_Category),
+        yago_wiki_category(Yago_Wiki_Category,Category_Name),
+        format('member of the Wikipeda category ~a',[Category_Name]).
 
 % Handle resources with generic naming methods (e.g., yago:'wordnetDomain_history',
 % yago:'wordnetDomain_military, etc).
-show_fact_part(Yago_Wordnet_Domain) :- atom(Yago_Wordnet_Domain),
-                                       yago_wordnet_domain(Yago_Wordnet_Domain,Category_Name),
-                                       format('~a',[Category_Name]).
 
+show_fact_part(Yago_Wordnet_Domain) :-
+        atom(Yago_Wordnet_Domain),
+        yago_wordnet_domain(Yago_Wordnet_Domain,Category_Name),
+        format('~a',[Category_Name]).
 
 % Handle most resources here.
 
 % Note that skos:'prefLabel' also maps WordNet resources, such as yago:wordnet_conflict_100958896
 % to their more succinct word lemmas, in this case, 'conflict'. Normally, it just looks up the
 % best name for something, e.g., yago:'Denver' would have the best name 'Denver'.
-show_fact_part(Resource) :- rdf(Resource,skos:'prefLabel',literal(lang('eng',BestName))),
-                            write(BestName),!.
+show_fact_part(Resource) :-
+        atom(Resource),
+        best_name_for_resource(Resource,BestName),
+        write(BestName),!.
 
-show_fact_part(Resource) :- pretty_print_for(Resource,BestName),
-                            write(BestName),!.
+show_fact_part(Compound):-
+        Compound = String^^Type,
+        write(String),!.
+
+show_fact_part(Resource) :-
+        atom(Resource),
+        rdf_global_id(Short_Prefixed_Name,Resource),
+        pretty_print_for(Short_Prefixed_Name,BestName),
+        write(BestName),!.
+
+% Handle literals
+% show_fact_part(Name) :-
+%pre        print(Name),!. % I use print rather than write as it uses registered RDF prefixes in the output.
+
 show_fact_part(Resource) :- portray(Resource),!.
 show_fact_part(Resource) :- write(Resource).
 
@@ -907,12 +1037,20 @@ Pretty print has not yet been defined for:
 
 */
 
-:- rdf_meta pretty_print_for(r,+).
+/*
+N.B. We DO NOT want :- rdf_meta pretty_print_for(r,-).  here, since that will cause expansion to the
+much longer terms commented out above. Instead we are going to first convert the longer form into
+the shorter form, and then call pretty_print_for, so we can enter the translations more clearly.
+*/
+
 pretty_print_for(rdf:'type','is a').
+pretty_print_for(yago:'isDescribedBy','is described by the Wikipedia page at').
 pretty_print_for(yago:'hasWonPrize','has won the prize').
 pretty_print_for(yago:'hasChild','had child').
-pretty_print_for(yago:'isMarriedTo','is / was married to').
-pretty_print_for(yago:'livesIn','lives / lived in').
+pretty_print_for(yago:'isMarriedTo','is or was married to').
+pretty_print_for(yago:'bornIn','was born in').
+pretty_print_for(yago:'bornOnDate','was born on').
+pretty_print_for(yago:'livesIn','lives in or lived in').
 pretty_print_for(yago:'influences','influenced').
 pretty_print_for(yago:'wasBornIn','was born in').
 pretty_print_for(yago:'wasBornOnDate','was born on').
@@ -942,21 +1080,12 @@ pretty_print_for(yago:'happenedOnDate','happened on').
 pretty_print_for(yago:'actedIn','acted in').
 pretty_print_for(yago:'created','created').
 pretty_print_for(yago:'directed','directed').
+pretty_print_for(yago:'produced','produced').
 pretty_print_for(yago:'hasGloss','has a dictionary definition of').
 pretty_print_for(yago:'hasWordnetDomain','is part of the topic').
 pretty_print_for(owl:'sameAs','is the same as').
 pretty_print_for(skos:'prefLabel','is typically called').
 pretty_print_for(rdfs:'subClassOf','is a kind of').
-
-/*
-
-Colorado yago:hasPoverty literal(type(http://yago-knowledge.org/resource/%,11.4))
-Colorado yago:hasUnemployment literal(type(http://yago-knowledge.org/resource/%,8.5))
-yago:geoentity_Denver_4191343 yago:hasGeonamesEntityId literal(4191343)
-yago:geoentity_Denver_4463523 yago:hasLatitude literal(type(http://yago-knowledge.org/resource/degrees,35.53125))
-yago:geoentity_Denver_4463523 yago:hasLongitude literal(type(http://yago-knowledge.org/resource/degrees,-81.0298))
-
-*/            
  
 /*
 pretty_print_for('http://www.w3.org/1999/02/22-rdf-syntax-ns#type','belongs to class').
@@ -976,7 +1105,6 @@ pretty_print_for('http://yago-knowledge.org/resource/hasAcademicAdvisor','had as
                 PREDICATES FOR SPECIFIC KINDS OF QUERIES
 ==============================================================================
 */
-
 
 % GeoNames experiments, if GeoNames is loaded.
 find_label_Denver(Label) :- rdf('http://yago-knowledge.org/resource/geoentity_Denver_2169039',rdfs:'label',Label).
@@ -1026,8 +1154,8 @@ any_born_between(-Person, +X, +Y)
 
 */
 
-any_born_between(Person, X,Y) :-
-        rdf(Person,yago:'wasBornOnDate',literal(type(xsd:'date',Date_String))),
+any_person_born_between(Person, X,Y) :-
+        rdf(Person,yago:'wasBornOnDate',date(Y,M,D)),
         split_string(Date_String,'-','',[Year,Month,Day]), % Date_String is, e.g., '1979-01-15'
         number_string(Year_Number,Year),
         Year_Number >= X,
@@ -1062,12 +1190,16 @@ any_born_in(+Place,-Person)
 
 */
 
-any_born_in(Place_Name,Person) :- best_resource_for_name(Place_Name,Place),
-                                  find_person_born_in(Place,Person).
+any_person_born_in(Place_Name,Person) :-
+        best_resource_for_name(Place_Name,Place),
+        find_person_born_in(Place,Person).
 
-find_person_born_in(Place,Person) :- rdf(Person,yago:'wasBornIn',Place).
-find_person_born_in(Place,Person) :- rdf(Place,yago:'isLocatedIn',Location),
-                                     find_person_born_in(Location,Person).
+any_person_born_in(Place,Person) :-
+        rdf(Person,yago:'wasBornIn',Place).
+
+any_person_born_in(Place,Person) :-
+        rdf(Place,yago:'isLocatedIn',Location),
+        find_person_born_in(Location,Person).
 
 /* Utilities used for questions. */
 
@@ -1086,10 +1218,17 @@ label "actor" this will find the right YAGO resource and right type,
 and not all the other "Bill Murray" resources out there.
 
 */
-find_X_isa_Y(X_Name,Y_Name,X_resource,Y_resource) :-
-        name_to_resource(X_Name,X_resource),
-        name_to_resource(Y_Name,Y_resource),
-        rdf(X_resource,rdf:'type',Y_resource).
+
+% find_X_isa_Y(+X_Name,+Y_Name,-X_resource,-Y_resource) :-
+
+% find_class_members_given_class_name(+Class_Name,-Member_Name,-Member_resource,-Class_resource)
+% is multi. Given the name of a class, such as "singer", it returns names it finds that are instances of that class,
+% such as "Elvis Presley".
+
+find_class_members_given_class_name(Class_Name,Member_Name,Member_resource,Class_resource) :-
+        name_to_resource(Class_Name,Class_resource),
+        rdf(Member_resource,rdf:'type',Class_resource),
+        resource_to_best_name(Member_resource,Member_name).
 
 :- write('Loaded query code and sample queries for YAGO'),nl.
 
@@ -1101,9 +1240,9 @@ is not given here, unlike in find_X_isa_Y.
 
 */
 
-isa(Resource,NameOfType) :- name_to_resource(NameOfType,WN_resource),
-                            rdf(Resource,rdf:'type',WN_resource).
-
+isa(Resource,NameOfType) :-
+        name_to_resource(NameOfType,WN_resource),
+        rdf(Resource,rdf:'type',WN_resource).
 
 /* whereIs looks up the location for a place given its name. It
 may succeed more than once if there are multiple places with that

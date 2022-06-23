@@ -1,12 +1,22 @@
-demo0 :- stats.
+% Stats about the KB first.
+
+kb1 :- get_all_rdf_stats.
+
+kb2 :- show_unique_relations.
+
+kb3 :- show_prefixes.
 
 demo1 :-
-        format('Facts about Denver found in YAGO 1.~n'),
-        facts('Denver').
+        format('Triples about Denver found in YAGO 1.~n'),
+        get_all_triples_for_resource(yago:'Denver,_Colorado').
 
 demo2 :-
+        format('Facts about Denver found in YAGO 1.~n'),
+        get_facts_for_name('Denver').
+
+demo2a :-
         format('Triples about Fort Collins found in YAGO 1.~n'),
-        triples('Fort Collins').
+        get_triples_for_name('Fort Collins').
 
 demo3 :-
         format('All candidate resources for name Fort Collins found in YAGO 1, found by matching substrings..~n'),

@@ -1,15 +1,5 @@
 /* My utility code for use in multiple SWI-Prolog applications. */
 
-/*
-
-Notes:
-
-pwd.
-
-
-*/
-
-
 % return_unique returns unique elements from Bag, one a time.
 return_unique(Bag,Next_Unique) :- uniquify(Bag,Set),!,member(Next_Unique,Set).
 
@@ -27,12 +17,29 @@ uniquify([First|RestOfBag],[First|RestOfSet]) :-
 % print_all/1 prints each element in a list on a separate line with a number. The list can contain any kinds of items.
 print_all(List) :- print_all(List,1).
 print_all([],_).
-print_all([Item|Rest],Index) :- format("~d. ~w~n",[Index,Item]),Next is Index + 1,print_all(Rest,Next).
+print_all([Item|Rest],Index) :-
+        format("~d. ",[Index]),
+        print(Item),    % When I use format here the prefixes are all expanded, so I use print instead.
+        nl,
+        Next is Index + 1,
+        print_all(Rest,Next).
 
 % print_triples/1 prints each triple in a list on a separate line with a number
+% Each triple should be given as a [X,Y,Z] list.
+
 print_triples(List) :- print_triples(List,1).
 print_triples([],_).
-print_triples([[X,Y,Z]|Rest],Index) :- format("~d. ~p, ~p, ~p.~n",[Index,X,Y,Z]),Next is Index + 1,print_triples(Rest,Next).
+print_triples([[X,Y,Z]|Rest],Index) :-
+        format("~d. ", [Index]),
+        print(X),  % When I use format here the prefixes are all expanded, so I use print here and below.
+        print(" "),
+        print(Y),
+        print(" "),
+        print(Z),
+        print("."),
+        nl,
+        Next is Index + 1,
+        print_triples(Rest,Next).
 
 % ensure_atom/2 converts the input to an atom, if necessary, when we wish to allow input to be
 % either an atom, number, or string.
@@ -94,7 +101,8 @@ e.g., yago_wiki_category('http://yago-knowledge.org/resource/wikicat_Mathematici
 X = 'Mathematicians who committed suicide'.
 
 */
-yago_wiki_category(Resource,Category_Name) :- Prefix = 'http://yago-knowledge.org/resource/',
+yago_wiki_category(Resource,Category_Name) :-
+        Prefix = 'http://yago-knowledge.org/resource/',
                                               atom_concat(Prefix,Full_Wiki_Category,Resource),
                                               atom_hyphens_to_spaces(Full_Wiki_Category,Wikicat_and_Category_Name),
                                               atom_concat('wikicat ',Category_Name,Wikicat_and_Category_Name).
