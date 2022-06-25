@@ -60,7 +60,7 @@ yago:'Denver,_Colorado'], [yago:'Alison_Nix', yago:livesIn, yago:'Denver,_Colora
 19. yago:'Bill_Murray'" "rdfs:label" ""Bill Murray"@it"."
 20. yago:'Bill_Murray'" "rdfs:label" ""Bill Murray"@lan"."
 21. yago:'Bill_Murray'" "rdfs:label" ""Bill Murray"@nl"."
-22. yago:'Bill_Murray'" "rdfs:label" ""Bill Murray"@pl"."
+22. yago:'Bill_Murray'" "rdfs:label" ""Bill Murray"@pl".
 23. yago:'Bill_Murray'" "rdfs:label" ""Bill Murray"@pt"."
 24. yago:'Bill_Murray'" "rdfs:label" ""Bill Murray"@sv"."
 25. yago:'Bill_Murray'" "rdfs:label" ""Bill Murray"@tr"."
@@ -160,35 +160,174 @@ yago:wikicategory_Second_City_alumni], [yago:'Bill_Murray', rdf:type|...],
 
 print_all_relevant_facts_for_resource(yago:'Bill_Murray').
 
-yago:'Bill_Murray' rdf:type yago:wikicategory_Actors_from_Chicago.
-yago:'Bill_Murray' rdf:type yago:wikicategory_American_comedians.
-yago:'Bill_Murray' rdf:type yago:wikicategory_American_film_actors.
-yago:'Bill_Murray' rdf:type yago:wikicategory_American_television_actors.
-yago:'Bill_Murray' rdf:type yago:'wikicategory_Irish-American_comedians'.
-yago:'Bill_Murray' rdf:type yago:wikicategory_Second_City_alumni.
-yago:'Bill_Murray' rdf:type yago:wordnet_comedian_109940146.
-yago:'Bill_Murray' rdf:type yago:wordnet_person_100007846.
-yago:'Bill_Murray' yago:actedIn yago:'All_You_Need_Is_Cash'.
-yago:'Bill_Murray' yago:actedIn yago:'Ed_Wood_(film)'.
-yago:'Bill_Murray' yago:actedIn yago:'Groundhog_Day_(film)'.
-yago:'Bill_Murray' yago:actedIn yago:'Kingpin_(film)'.
-yago:'Bill_Murray' yago:actedIn yago:'Loose_Shoes'.
-yago:'Bill_Murray' yago:actedIn yago:'The_Darjeeling_Limited'.
-yago:'Bill_Murray' yago:actedIn yago:'Wild_Things'.
-yago:'Bill_Murray' yago:bornIn yago:'Wilmette,_Illinois'.
-yago:'Bill_Murray' yago:bornOnDate "1950-09-21"^^xsd:string.
-yago:'Bill_Murray' yago:directed yago:'Quick_Change'.
-yago:'Bill_Murray' yago:hasWonPrize yago:'BAFTA_Award_for_Best_Actor_in_a_Leading_Role'.
-yago:'Bill_Murray' yago:hasWonPrize yago:'Emmy_Award'.
-yago:'Bill_Murray' yago:hasWonPrize yago:'Golden_Globe_Award_for_Best_Actor_-_Motion_Picture_Musical_or_Comedy'.
-yago:'Bill_Murray' yago:hasWonPrize yago:'Lost_in_Translation_(film)'.
-yago:'Bill_Murray' yago:hasWonPrize yago:'New_York_Film_Critics_Circle_Award_for_Best_Actor'.
-yago:'Bill_Murray' yago:influences yago:'Jason_Lee_(entertainer)'.
-yago:'Bill_Murray' yago:influences yago:'Vince_Vaughn'.
-yago:'Bill_Murray' yago:influences yago:'Wes_Anderson'.
-yago:'Bill_Murray' yago:isDescribedBy "http://en.wikipedia.org/wiki/Bill_Murray"^^xsd:string.
-yago:'Bill_Murray' yago:isMarriedTo yago:'Jennifer_Butler'.
-yago:'Bill_Murray' yago:produced yago:'Quick_Change'.
-yago:'George_Carlin' yago:influences yago:'Bill_Murray'.
-yago:'Jennifer_Butler' yago:isMarriedTo yago:'Bill_Murray'.
+Bill Murray is a actor from Chicago.
+Bill Murray is a american comedian.
+Bill Murray is a american film actor.
+Bill Murray is a american television actor.
+Bill Murray is a irish-American comedian.
+Bill Murray is a second City alumnus.
+Bill Murray is a comic.
+Bill Murray is a mortal.
+Bill Murray acted in All You Need Is Cash.
+Bill Murray acted in Ed Wood.
+Bill Murray acted in Groundhog Day.
+Bill Murray acted in Kingpin (film).
+Bill Murray acted in Loose Shoes.
+Bill Murray acted in The Darjeeling Limited.
+Bill Murray acted in Wild Things.
+Bill Murray was born in Wilmette, Illinois.
+Bill Murray was born on 1950-09-21.
+Bill Murray directed Quick Change.
+Bill Murray has won the prize BAFTA Award for Best Actor in a Leading Role.
+Bill Murray has won the prize Emmy Award.
+Bill Murray has won the prize Golden Globe Award for Best Actor - Motion Picture Musical or Comedy.
+Bill Murray has won the prize Lost in Translation.
+Bill Murray has won the prize New York Film Critics Circle Award for Best Actor.
+Bill Murray influenced Jason Lee.
+Bill Murray influenced Vincent Anthony Vaughn.
+Bill Murray influenced Wes Anderson.
+Bill Murray is described by the Wikipedia page at http://en.wikipedia.org/wiki/Bill_Murray.
+Bill Murray is or was married to Jennifer Butler.
+Bill Murray produced Quick Change.
+George Carlin influenced Bill Murray.
+Jennifer Butler is or was married to Bill Murray.
 
+# Names and name ambiguity. 'Elvis Presley' is easy, but 'car' is not.
+# For the former we can use best_name_for_resource. For the latter
+# we can either list all possibilities or force a choice.
+
+?- all_resources_for_name('car',Rs).
+Rs = [yago:wikicategory_The_Cars, yago:wordnet_cable_car_102934451, yago:wordnet_car_102958343, yago:wordnet_car_102959942, yago:wordnet_car_102960352, yago:wordnet_car_102960501].
+
+?- all_resources_for_name('Elvis Presley',Rs).
+Rs = [yago:'Elvis_Presley', yago:'Elvis_Presley_(album)'].
+
+# Our approach is to show all possibilities, ordered by the number of
+# facts associated with each resource.
+
+?- page_ranked_resources('Obama').
+'The best matching resources for ''Obama'' are:'
+1. yago:'Barack_Obama'
+2. yago:'Obama,_Fukui'
+3. yago:'Obama,_Nagasaki'
+true.
+
+?- page_ranked_resources('Elvis Presley').
+'The best matching resources for ''Elvis Presley'' are:'
+1. yago:'Elvis_Presley'
+2. yago:'Elvis_Presley_(album)'
+true.
+
+
+?- show_facts_for_each_interpretation_of_name('cat').
+
+1. For resource yago:wordnet_big_cat_102127808 there are 12 facts:
+--cat is a kind of feline.
+--Acinonyx jubatus is a kind of cat.
+--jaguar is a kind of cat.
+--leopard is a kind of cat.
+--liger is a kind of cat.
+--Panthera leo is a kind of cat.
+--sabertooth is a kind of cat.
+--snow leopard is a kind of cat.
+--Panthera tigris is a kind of cat.
+--tiglon is a kind of cat.
+2. For resource yago:wordnet_cat_102121620 there are 10 facts:
+--cat in popular culture is a kind of true cat.
+--famous cat is a kind of true cat.
+--fictional cat is a kind of true cat.
+--gunsmith cat is a kind of true cat.
+--saber-toothed cat is a kind of true cat.
+--true cat is a kind of feline.
+--Felis domesticus is a kind of true cat.
+--wildcat is a kind of true cat.
+3. For resource yago:wordnet_kat_103608870 there are 9 facts:
+--nashville kat is a kind of Arabian tea.
+--Arabian tea is a kind of excitant.
+4. For resource yago:wordnet_guy_110153414 there are 6 facts:
+--bozo is a kind of man.
+--sod is a kind of bozo.
+5. For resource yago:wordnet_cat_109900153 there are 3 facts:
+--cat is a kind of gossipmonger.
+--cat is a kind of woman.
+6. For resource yago:wordnet_cat-o%27-nine-tails_102985606 there are 3 facts:
+--cat is a kind of whip.
+true .
+
+
+?- show_facts_for_each_interpretation_of_name('car').
+
+1. For resource yago:wordnet_car_102958343 there are 3213 facts:
+--Ford is a car.
+--Ford is a car.
+--Ford is a car.
+--Ford is a car.
+--1955 Dodge is a car.
+--Ford is a car.
+--Ford is a car.
+--1958 Dodge is a car.
+--Ford is a car.
+--A.L.F.A 24 HP is a car.
+2. For resource yago:wordnet_car_102959942 there are 18 facts:
+--baggage car is a kind of railway car.
+--caboose is a kind of railway car.
+--railway car is a kind of wheeled vehicle.
+--railway car yago:isMemberOf railroad train.
+--club car is a kind of railway car.
+--freight car is a kind of railway car.
+--guard's van is a kind of railway car.
+--handcar is a kind of railway car.
+--mail car is a kind of railway car.
+--carriage is a kind of railway car.
+3. For resource yago:wordnet_cable_car_102934451 there are 5 facts:
+--cable car in Malaysia is a kind of car.
+--car is a kind of compartment.
+--car is part of funicular railway.
+4. For resource yago:wordnet_car_102960501 there are 4 facts:
+--car is a kind of compartment.
+--car is part of airship.
+5. For resource yago:wordnet_car_102960352 there are 4 facts:
+--car is a kind of compartment.
+--car is part of lift.
+6. For resource yago:wikicategory_The_Cars there are 4 facts:
+--The New Cars is a car.
+--car is a kind of car.
+--car is described by the Wikipedia page at http://en.wikipedia.org/wiki/Category:The_Cars.
+true 
+
+best_resource_for_name('Paris',Resource).
+
+?- best_resource_for_name('Paris',Resource).
+Resource = yago:'Paris'.
+
+
+?- print_all_relevant_facts_for_name('Abraham Lincoln').
+Abraham Lincoln is a assassinated American politician.
+Abraham Lincoln is a assassinated United States president.
+Abraham Lincoln is a illinois republican.
+Abraham Lincoln is a illinois lawyer.
+Abraham Lincoln is a illinois politician.
+Abraham Lincoln is a president of the United States.
+Abraham Lincoln is a union political leader.
+Abraham Lincoln is a attorney.
+Abraham Lincoln is a mortal.
+Abraham Lincoln is a president.
+Abraham Lincoln was born in Hardin County, Kentucky.
+Abraham Lincoln was born on 1809-02-12.
+Abraham Lincoln created Gettysburg Address.
+Abraham Lincoln died in District of Columbia.
+Abraham Lincoln died on 1865-04-15.
+Abraham Lincoln had child Edward Baker Lincoln.
+Abraham Lincoln had child Robert Todd Lincoln.
+Abraham Lincoln had child Thomas Lincoln.
+Abraham Lincoln had child William Wallace Lincoln.
+Abraham Lincoln yago:hasPredecessor John Henry (representative).
+Abraham Lincoln yago:hasSuccessor Thomas L. Harris.
+Abraham Lincoln influenced Edgar Lee Masters.
+Abraham Lincoln yago:isAffiliatedTo National Union Party (United States).
+Abraham Lincoln yago:isAffiliatedTo Whig Party (United States).
+Abraham Lincoln is described by the Wikipedia page at http://en.wikipedia.org/wiki/Abraham_Lincoln.
+Abraham Lincoln is or was married to Mary Todd Lincoln.
+Mary Todd Lincoln is or was married to Abraham Lincoln.
+Thomas Lincoln had child Abraham Lincoln.
+Thomas Paine influenced Abraham Lincoln.

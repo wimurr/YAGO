@@ -1,0 +1,132 @@
+
+demo.pl,323
+kb1 :-kb13,29
+kb2 :-kb25,56
+kb3 :-kb37,87
+demo1 :-demo19,110
+demo2 :-demo213,210
+demo2a :-demo2a17,314
+demo3 :-demo321,431
+demo4 :-demo426,638
+demo5 :-demo532,820
+demo6 :-demo638,1005
+demo7 :-demo744,1219
+demo8 :-demo850,1420
+demo9 :-demo956,1617
+demo10 :-demo1062,1809
+demo11 :-demo1166,1921
+
+queries.pl,2518
+get_all_rdf_stats :-get_all_rdf_stats175,6057
+unique_relations(185,6443
+show_unique_relations :-show_unique_relations187,6515
+get_facts_for(191,6594
+get_triples_for(193,6652
+describe_name(196,6744
+find_relations(208,7327
+describe(231,8197
+print_all_triples_for_resource(233,8292
+get_all_triples_for_resource(240,8613
+get_next_triple_for_resource(247,8982
+get_next_triple_w_resource_as_subject(253,9230
+get_next_triple_w_resource_as_object(256,9324
+info(264,9540
+any_resource_for_name(287,10352
+all_resources_for_name(298,10769
+best_resource_for_name(305,11128
+best_resources_for_name(310,11418
+single_best_resource_for_name(315,11712
+name_to_resource(377,13951
+best_first_concepts_for_name(388,14573
+best_concept_only_for_name(396,15116
+ordered_all_resources_for_name(403,15454
+best_match_for_name(413,15750
+page_ranked_resources(420,15938
+name_of_resource_via_page_rank(434,16437
+best_first_concept_page_ranked_for_name(445,17210
+very_best_resources(458,17674
+print_very_best_resources(464,17932
+gather_and_sort_resources_via_number_of_facts(483,18496
+generate_resource_number_facts_pairs(490,18942
+take_first_elements(497,19364
+all_facts(540,21361
+show_all_facts(545,21590
+list_all_facts(549,21760
+show_facts_best_first(560,22120
+show_triples_best_first(568,22452
+gather_and_sort_facts(589,23061
+generate_resource_number_facts_triples(596,23499
+take_facts_and_flatten(603,23978
+take_facts_and_flatten1(606,24256
+best_show_facts_best_first(620,24774
+best_show_triples_best_first(635,25113
+fact(656,25890
+fact_for_concept(660,26037
+all_facts_for_resource(670,26673
+facts_about_concept(682,27162
+facts1(690,27514
+facts2(691,27595
+facts3(692,27680
+is_relationship_for_uninteresting_fact(702,28050
+is_geo_resource(711,28584
+print_all_facts_for_resource(725,29064
+show_all_triples_for_resource(730,29229
+show_triples(739,29536
+show_facts(744,29724
+show_fact(747,29811
+show_fact_part(756,30031
+pretty_print_for(970,39700
+find_label_Denver(1030,42951
+location(1032,43067
+what_is(1035,43343
+where_is(1044,43539
+locations_for(1047,43670
+collect_locations(1050,43809
+born_on(1063,44149
+any_person_born_between(1077,44457
+any_person_born_in(1113,45359
+add_name(1126,45743
+find_class_members_given_class_name(1148,46560
+isa(1163,47058
+where_is(1177,47507
+show_all_predicates(1192,48032
+dates(1239,49786
+wordnet(1242,49993
+all_WN(1252,50402
+wiki(1255,50524
+all_wiki(1270,51276
+jeopardy_question :-jeopardy_question1287,51725
+find_words(1296,51862
+
+utils.pl,308
+return_unique(4,130
+uniquify(8,287
+print_all(18,678
+print_triples(28,1051
+ensure_atom(45,1599
+ensure_two_chars(64,2155
+capitalize_atom(79,2648
+atom_starts_with_prefix(86,2973
+yago_wiki_category(102,3450
+yago_wordnet_domain(115,4105
+atom_hyphens_to_spaces(125,4836
+atom_spaces_to_hyphens(132,5243
+
+yago.pl,550
+connect :-connect11,218
+init_prefixes:-init_prefixes30,1050
+load_yago :-load_yago39,1505
+q1 :-q146,1785
+q2 :-q249,1860
+show_prefixes :-show_prefixes62,2226
+count_subject_resources(68,2386
+count_all_resources(69,2457
+count_predicates(70,2525
+count_literals(71,2599
+count_graph(72,2669
+show_all_stats :-show_all_stats74,2727
+show_triples_stats :-show_triples_stats86,3151
+set_hash_parameters :-set_hash_parameters95,3449
+optimize :-optimize106,3833
+warm_indexes :-warm_indexes135,4954
+warm_specific :-warm_specific148,5292

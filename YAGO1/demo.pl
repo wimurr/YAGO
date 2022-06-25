@@ -8,64 +8,41 @@ kb3 :- show_prefixes.
 
 demo1 :-
         format('Triples about Denver found in YAGO 1.~n'),
-        get_all_triples_for_resource(yago:'Denver,_Colorado').
+        get_all_triples_for_resource(yago:'Denver,_Colorado',Triples),
+        print_all(Triples).
 
 demo2 :-
-        format('Facts about Denver found in YAGO 1.~n'),
-        get_facts_for_name('Denver').
-
-demo2a :-
-        format('Triples about Fort Collins found in YAGO 1.~n'),
-        get_triples_for_name('Fort Collins').
+        best_resource_for_name('Denver',X),
+        format('The best resource found for Denver in YAGO 1 is ~a.~n',[X]).
 
 demo3 :-
-        format('All candidate resources for name Fort Collins found in YAGO 1, found by matching substrings..~n'),
-        candidates_for('Fort Collins',Candidates),
-        print_all(Candidates).
+        format('Triples about Fort Collins found in YAGO 1.~n'),
+        print_all_triples_for_name('Fort Collins').
 
 demo4 :-
-        format('All candidate resources for name Lincoln found in YAGO 1, one at a time.~n'),
-        any_resource_for_name('Lincoln',X),
-        writeln(X),
-        fail.
+        format('Best candidate resources for name Lincoln found in YAGO 1.~n'),
+        very_best_resources('Lincoln',Candidates),
+        print_all(Candidates).
 
 demo5 :-
+        print_all_triples_for_resource(yago:'Bill_Murray').
+
+demo6 :-
+        print_all_relevant_facts_for_resource(yago:'Bill_Murray').
+
+demo7 :-
+        print_all_relevant_facts_for_name('Fort Collins').
+        
+demo8 :-
         format('Best candidate resources for name Lincoln found in YAGO 1, one at a time..~n'),
-        best_resource_for_name('Lincoln',X),
+        very_best_resources('Abraham Lincoln',X),
         writeln(X),
         fail.
 
-demo6 :-
-        format('Best candidate resources for name Abraham Lincoln found in YAGO 1, one at a time.~n'),
-        best_resource_for_name('Abraham Lincoln',Resource),
-        writeln(Resource),
-        fail.
-
-demo7 :-
-        format('Best single candidate resources for name Obama found in YAGO 1, one at a time.~n'),
-        best_resource_for_name('Obama',Resource),
-        writeln(Resource),
-        fail.
-
-demo8 :-
-        format('Best candidate resource for word cat found in YAGO 1, one at a time.~n'),
-        best_resource_for_name('cat',Resource),
-        writeln(Resource),
-        fail.        
-
 demo9 :-
-        format('All best candidate resources for word cat found in YAGO 1, in order.~n'),
-        best_resources_for_name('cat',Resources),
-        writeln(Resources),
-        fail.
+        format('Show facts for each alternate interpretation of the word cat.'),
+        show_facts_for_each_interpretation_of_name('cat').
 
 demo10 :-
-        format('Best facts for Obama found in YAGO 1, in order.~n'),        
-        facts('Obama').
-
-demo11 :-
-        format('Best facts for Chicago found in YAGO 1, in order.~n'),        
-        facts('Chicago').
-
-
+        best_show_facts_best_first('Lincoln').
 

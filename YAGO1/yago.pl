@@ -67,9 +67,9 @@ show_prefixes :-
 
 count_subject_resources(N) :- setof(X,rdf_subject(X),Xs),length(Xs,N).
 count_all_resources(N) :- setof(X,rdf_resource(X),Xs),length(Xs,N).
-count_predicates(N) :- setof(X,rdf_current_predicate(X),Xs),length(Xs,N).
-count_literals(N) :- setof(X,rdf_current_literal(X),Xs),length(Xs,N).
-count_graph(N) :- setof(X,rdf_graph(X),Xs),length(Xs,N).
+count_predicates(N) :- setof(X,rdf_db:rdf_current_predicate(X),Xs),length(Xs,N).
+count_literals(N) :- setof(X,rdf_db:rdf_current_literal(X),Xs),length(Xs,N).
+count_graph(N) :- setof(X,rdf_db:rdf_graph(X),Xs),length(Xs,N).
 
 show_all_stats :-
         count_subject_resources(N),
