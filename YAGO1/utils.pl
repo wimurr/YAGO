@@ -1,18 +1,11 @@
 /* My utility code for use in multiple SWI-Prolog applications. */
 
-% return_unique returns unique elements from Bag, one a time.
-return_unique(Bag,Next_Unique) :- uniquify(Bag,Set),!,member(Next_Unique,Set).
 
-% uniquify(+Bag,-Set)
-% removes duplicate elements, retaining initial order.
-uniquify([],[]).
-uniquify([First|RestOfBag],[First|RestOfSet]) :-
-        memberchk(First,RestOfBag),
-        delete(RestOfBag,First,Updated),
-        uniquify(Updated,RestOfSet),!.
-uniquify([First|RestOfBag],[First|RestOfSet]) :-
-        uniquify(RestOfBag,RestOfSet).
+/*
 
+                   PRINTING
+
+*/  
 
 % print_all/1 prints each element in a list on a separate line with a number. The list can contain any kinds of items.
 print_all(List) :- print_all(List,1).
@@ -40,6 +33,36 @@ print_triples([[X,Y,Z]|Rest],Index) :-
         nl,
         Next is Index + 1,
         print_triples(Rest,Next).
+
+% repeat_indent(+N) just prints 3 * N spaces.
+
+repeat_indent(0) :- !.
+
+repeat_indent(N) :-
+        N > 0,
+        Next is N - 1,
+        write('   '),
+        repeat_indent(Next).
+
+
+/*
+
+                   LIST MANIPULATION
+
+*/  
+
+% return_unique returns unique elements from Bag, one a time.
+return_unique(Bag,Next_Unique) :- uniquify(Bag,Set),!,member(Next_Unique,Set).
+
+% uniquify(+Bag,-Set)
+% removes duplicate elements, retaining initial order.
+uniquify([],[]).
+uniquify([First|RestOfBag],[First|RestOfSet]) :-
+        memberchk(First,RestOfBag),
+        delete(RestOfBag,First,Updated),
+        uniquify(Updated,RestOfSet),!.
+uniquify([First|RestOfBag],[First|RestOfSet]) :-
+        uniquify(RestOfBag,RestOfSet).
 
 % ensure_atom/2 converts the input to an atom, if necessary, when we wish to allow input to be
 % either an atom, number, or string.
@@ -103,9 +126,9 @@ X = 'Mathematicians who committed suicide'.
 */
 yago_wiki_category(Resource,Category_Name) :-
         Prefix = 'http://yago-knowledge.org/resource/',
-                                              atom_concat(Prefix,Full_Wiki_Category,Resource),
-                                              atom_hyphens_to_spaces(Full_Wiki_Category,Wikicat_and_Category_Name),
-                                              atom_concat('wikicat ',Category_Name,Wikicat_and_Category_Name).
+        atom_concat(Prefix,Full_Wiki_Category,Resource),
+        atom_underscores_to_spaces(Full_Wiki_Category,Wikicat_and_Category_Name),
+        atom_concat('wikicat ',Category_Name,Wikicat_and_Category_Name).
 
 
 /* yago_wordnet_domain/2 takes a resource name, such as yago:'wordnetDomain_history',
@@ -115,22 +138,26 @@ e.g., yago_wordnet_domain('http://yago-knowledge.org/resource/wordnetDomain_mili
 X = 'Military'
 
 */
-yago_wordnet_domain(Resource,Final_Topic_Name) :- Prefix = 'http://yago-knowledge.org/resource/',
-                                                  atom_concat(Prefix,Full_Wordnet_Domain,Resource),
-                                                  atom_hyphens_to_spaces(Full_Wordnet_Domain,WordNet_Topic_Name),
-                                                  atom_concat('wordnetDomain ',Topic_Name,WordNet_Topic_Name),
-                                                  upcase_atom(Topic_Name,Final_Topic_Name).
+yago_wordnet_domain(Resource,Final_Topic_Name) :-
+        Prefix = 'http://yago-knowledge.org/resource/',
+        atom_concat(Prefix,Full_Wordnet_Domain,Resource),
+        atom_underscores_to_spaces(Full_Wordnet_Domain,WordNet_Topic_Name),
+        atom_concat('wordnetDomain ',Topic_Name,WordNet_Topic_Name),
+        upcase_atom(Topic_Name,Final_Topic_Name).
 
-/* atom_hyphens_to_spaces/2 changes the hyphens to spaces within an atom, e.g.,
-   atom_hyphens_to_spaces('wikicat_Mathematicians_who_committed_suicide',X).
+/* atom_underscores_to_spaces/2 changes the underscores to spaces within an atom, e.g.,
+   atom_underscores_to_spaces('wikicat_Mathematicians_who_committed_suicide',X).
    X = 'wikicat Mathematicians who committed suicide'.
 */
-atom_hyphens_to_spaces(With_Hyphens,With_Spaces) :- atomic_list_concat(Words,'_',With_Hyphens),
-                                                    atomic_list_concat(Words,' ',With_Spaces).
+atom_underscores_to_spaces(With_Underscores,With_Spaces) :-
+        atomic_list_concat(Words,'_',With_Underscores),
+        atomic_list_concat(Words,' ',With_Spaces).
 
-/* atom_spaces_to_hyphens/2 changes the spaces to hyphens within an atom, e.g.,
-   atom_spaces_to_hyphens('wikicat Mathematicians who committed suicide',X).
+/* atom_spaces_to_underscores/2 changes the spaces to underscores within an atom, e.g.,
+   atom_spaces_to_underscores('wikicat Mathematicians who committed suicide',X).
    X = 'wikicat_Mathematicians_who_committed_suicide'.
 */
-atom_spaces_to_hyphens(With_Spaces,With_Hyphens) :- atomic_list_concat(Words,' ',With_Spaces),
-                                                    atomic_list_concat(Words,'_',With_Hyphens).
+atom_spaces_to_underscores(With_Spaces,With_Underscores) :-
+        atomic_list_concat(Words,' ',With_Spaces),
+        atomic_list_concat(Words,'_',With_Underscores).
+

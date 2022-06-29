@@ -360,6 +360,27 @@ get_next_triple_w_resource_as_relation(Resource,[X,Resource,Z]) :-
 get_next_triple_w_resource_as_object(Resource,[X,Y,Resource]) :-
         rdf(X,Y,Resource).
 
+get_unique_relations(Relations) :-
+        findall(Relation,rdf_predicate(Relation),Relations).
+
+get_unique_subjects(Subjects) :-
+        findall(Subject,rdf_subject(Subject),Subjects).
+
+get_unique_objects(Objects) :-
+        findall(Object,rdf_object(Object),Objects).
+
+show_unique_relations :-
+        get_unique_relations(Relations),
+        print_all(Relations).
+
+show_unique_subjects :-
+        get_unique_subjects(Subjects),
+        print_all(Subjects).
+
+show_unique_objects :-
+        get_unique_objects(Objects),
+        print_all(Objects).
+
 /*
 ==============================================================================
          INTERFACE PREDICATES TO MAP FROM  YAGO RESOURCES TO TEXT STRING NAMES
@@ -1197,6 +1218,38 @@ pretty_print_for('http://yago-knowledge.org/resource/hasAcademicAdvisor','had as
                 PREDICATES FOR SPECIFIC KINDS OF QUERIES
 ==============================================================================
 */
+
+% find_parents(+Resource,-Parents) finds all the parents in the Yago taxonomy above the resource.
+
+:- rdf_meta find_parents(r,-).
+
+find_parents(Resource,Parents) :-
+        find_new_parents(Resource,1,[Resource],Parents).
+
+% find_new_parents(+Resource,+Distance,+Visited,-Parents) is a helper function to
+% find all the parents in the Yago taxonomy above a resource.
+
+:- rdf_meta find_new_parents(r,-,-,-).
+
+find_new_parents(Resource,Distance,Visited,Parents) :-
+        (   rdf(Resource,rdf:'type',Parent);
+            rdf(Resource,rdfs:'subClassOf',Parent)  ),
+        not(memberchk(Parent,Visited)),
+        note_new_parent(Parent,Distance),
+        New_distance is Distance + 1,
+        find_new_parents(Parent,New_distance,[Parent|Visited],[Parent|Parents]).
+
+find_new_parents(Resource,Distance,Visited,[]) :- !.
+
+% note_new_parent currently just prints out a new parent,
+% indented according to its level.
+
+:- rdf_meta note_new_parents(r,-).
+
+note_new_parent(Parent,Distance) :-
+        repeat_indent(Distance),
+        print(Parent),
+        nl.
 
 % GeoNames experiments, if GeoNames is loaded.
 find_label_Denver(Label) :- rdf('http://yago-knowledge.org/resource/geoentity_Denver_2169039',rdfs:'label',Label).

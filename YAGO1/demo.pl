@@ -8,8 +8,7 @@ kb3 :- show_prefixes.
 
 demo1 :-
         format('Triples about Denver found in YAGO 1.~n'),
-        get_all_triples_for_resource(yago:'Denver,_Colorado',Triples),
-        print_all(Triples).
+        print_all_triples_for_resource(yago:'Denver,_Colorado').
 
 demo2 :-
         best_resource_for_name('Denver',X),
