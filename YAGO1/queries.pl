@@ -1219,27 +1219,79 @@ pretty_print_for('http://yago-knowledge.org/resource/hasAcademicAdvisor','had as
 ==============================================================================
 */
 
-% find_parents(+Resource,-Parents) finds all the parents in the Yago taxonomy above the resource.
+% find_all_parents(+Resource,-Parents) finds all the parents in the Yago taxonomy above the resource.
 
-:- rdf_meta find_parents(r,-).
+:- rdf_meta find_all_parents(r,-).
 
-find_parents(Resource,Parents) :-
-        find_new_parents(Resource,1,[Resource],Parents).
+find_all_parents(Resource,All_Parents) :-
+        find_new_parents_layer_by_layer([Resource],1,[Resource],All_Parents),
+        print_all(All_Parents).
 
-% find_new_parents(+Resource,+Distance,+Visited,-Parents) is a helper function to
-% find all the parents in the Yago taxonomy above a resource.
+% find_new_parents_layer_by_layer(+Current_Layer,+Distance,+Visited,-Parents) 
+% is a helper function to find all the parents in the Yago taxonomy above a resource.
 
-:- rdf_meta find_new_parents(r,-,-,-).
+:- rdf_meta find_new_parents_layer_by_layer(t,+,t,-).
 
-find_new_parents(Resource,Distance,Visited,Parents) :-
-        (   rdf(Resource,rdf:'type',Parent);
-            rdf(Resource,rdfs:'subClassOf',Parent)  ),
-        not(memberchk(Parent,Visited)),
-        note_new_parent(Parent,Distance),
-        New_distance is Distance + 1,
-        find_new_parents(Parent,New_distance,[Parent|Visited],[Parent|Parents]).
+find_new_parents_layer_by_layer(Current_Layer,Distance,Visited,All_Ancestors_Everywhere) :-
+        % first find new parents by expanding the current layer
+        find_immediate_higher_level_parents(Current_Layer,Visited,All_New_Parents),
+        forall(member(New_Parent,All_New_Parents),note_new_parent(New_Parent,Distance)),
+        length(All_New_Parents,N),
+        continuation(N,Distance,Visited,All_New_Parents,All_Ancestors_Everywhere).
 
-find_new_parents(Resource,Distance,Visited,[]) :- !.
+:- rdf_meta continuation(+,+,t,t,-).
+
+% continuation(+N,+Distance,+Visited,+All_New_Parents,-All_Ancestors_Everywhere) is det
+
+continuation(0,Distance,Visited,All_New_Parents,All_Ancestors_Everywhere) :-
+        All_Ancestors_Everywhere = All_New_Parents,
+        !.
+
+continuation(N,Distance,Visited,All_New_Parents,All_Ancestors_Everywhere) :-
+        New_Distance is Distance + 1,
+        append(Visited,All_New_Parents,Updated_Visited),
+        find_new_parents_layer_by_layer(All_New_Parents,New_Distance,Updated_Visited,Next_Layer_New_Parents),
+        append(All_New_Parents,Next_Layer_New_Parents,All_Ancestors_Everywhere),
+        !.
+
+:- rdf_meta find_new_parent(r,t,r).
+
+% find_new_parent finds a next layer parent for Resource.
+% find_new_parent(+Resource,+Visited,-New_Parent) is multi
+% We assume Resource is part of Visited, along with other previously seen parents.
+
+find_new_parent(Resource,Visited,New_Parent) :-
+        rdf(Resource,rdf:'type',New_Parent),
+        not(memberchk(New_Parent,Visited)).
+
+find_new_parent(Resource,Visited,New_Parent) :-
+        rdf(Resource,rdfs:'subClassOf',New_Parent),
+        not(memberchk(New_Parent,Visited)).
+
+% find_new_parents_for_resource(+Resource,+Visited,-New_Parents) is det
+% Simply finds all new immediate parents of the Resource that are
+% not in Visited.
+
+:- rdf_meta find_new_parents_for_resource(r,t,-).
+
+find_new_parents_for_resource(Resource,Visited,New_Parents) :-
+        findall(New_Parent,find_new_parent(Resource,Visited,New_Parent),New_Parents).
+
+% find_immediate_higher_level_parents(+Resources,+Visited,-New_Parents) is det.
+% finds all parents of the Resources given -- typically the last layer of parents
+% found.
+
+:- rdf_meta find_immediate_higher_level_parents(t,t,-).
+
+find_immediate_higher_level_parents([Resource|Rest],Visited,All_New_Parents) :-
+        % find parents for the first resource...
+        find_new_parents_for_resource(Resource,Visited,Some_New_Parents),
+        append(Visited,Some_New_Parents,Updated_All_Visited),
+        % then find parents for the remaining resources.
+        find_immediate_higher_level_parents(Rest,Updated_All_Visited,Other_New_Parents),
+        append(Some_New_Parents,Other_New_Parents,All_New_Parents).
+
+find_immediate_higher_level_parents([],Visited,[]).
 
 % note_new_parent currently just prints out a new parent,
 % indented according to its level.

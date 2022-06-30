@@ -45,3 +45,9 @@ demo9 :-
 demo10 :-
         best_show_facts_best_first('Lincoln').
 
+demo11 :-
+        find_all_parents(yago:'Bill_Murray',Ancestors).
+
+demo12 :-
+        find_all_parents(yago:'Abraham_Lincoln',Ancestors).
+
