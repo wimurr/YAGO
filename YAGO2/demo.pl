@@ -7,20 +7,20 @@ kb2 :- show_unique_relations.
 kb3 :- show_prefixes.
 
 demo1 :-
-        get_yago_resource('Denver, Colorado',Yago_Resource),
-        format('Triples about Denver found in YAGO 1.~n'),
+        get_yago_resource('Denver',Yago_Resource),
+        format('Triples about Denver found in YAGO 2.~n'),
         print_all_triples_for_resource(Yago_Resource).
 
 demo2 :-
         best_resource_for_name('Denver',X),
-        format('The best resource found for Denver in YAGO 1 is ~a.~n',[X]).
+        format('The best resource found for Denver in YAGO 2 is ~a.~n',[X]).
 
 demo3 :-
-        format('Triples about Fort Collins found in YAGO 1.~n'),
+        format('Triples about Fort Collins found in YAGO 2.~n'),
         print_all_triples_for_name('Fort Collins').
 
 demo4 :-
-        format('Best candidate resources for name Lincoln found in YAGO 1.~n'),
+        format('Best candidate resources for name Lincoln found in YAGO 2.~n'),
         very_best_resources('Lincoln',Candidates),
         print_all(Candidates).
 
@@ -36,7 +36,7 @@ demo7 :-
         print_all_relevant_facts_for_name('Fort Collins').
         
 demo8 :-
-        format('Best candidate resources for name Lincoln found in YAGO 1, one at a time..~n'),
+        format('Best candidate resources for name Lincoln found in YAGO 2, one at a time..~n'),
         very_best_resources('Abraham Lincoln',X),
         print_all(X),
         fail.
@@ -49,13 +49,29 @@ demo10 :-
         best_show_facts_best_first('Lincoln').
 
 demo11 :-
+        format('All YAGO 2 ontology ancestors of Bill Murray.~n'),
         get_yago_resource('Bill Murray',Yago_Resource),
         find_all_parents(Yago_Resource,Ancestors),
         print_all(Ancestors).
 
 demo12 :-
+        format('All YAGO 2 ontology ancestors of Abraham Lincoln.~n'),
         get_yago_resource('Abraham Lincoln',Yago_Resource),
         find_all_parents(Yago_Resource,Ancestors),
         print_all(Ancestors).
+
+demo13 :-
+        format('YAGO 2 ontology, locations of places.~n'),
+        forall(member(X,['Seattle','Chicago','Denver','Miami']),
+               say_where_is(X)).
+
+demo14 :-
+        format('YAGO 2 ontology, show all examples of a WN type.~n'),
+        forall(member(X,['cat','dog','tank']),
+               show_all_examples(X)).
+
+demo15 :-
+        % Includes Einstein.
+        show_all_people_born_between(1879,1880).
 
 

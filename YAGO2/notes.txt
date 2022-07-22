@@ -1,0 +1,1057 @@
+------
+YAGO 1
+------
+
+The first version of YAGO has facts, but no preferred labels. It also does not have time or date associated with
+particular facts.
+
+Since we do not have a preferred label, I used a heuristic to select the resource with the most facts for a label, but
+that does not always work. E.g., "Lincoln" maps to Lincoln, Nebraska and not Abraham Lincoln.
+
+The files can be read in directly, without cleaning.
+
+------
+YAGO 2
+------
+
+The second version of YAGO has all of the above, but further:
+
+* Facts are numbered in comments above the lines. The files require "cleaning" as described later, before swi-prolog's
+  semweb can read them in with rdf_load.
+
+• YAGO2s contains thematic domains such as “music” or “science” from WordNet Domains, which gives a topic structure to YAGO.
+
+• Preferred labels, e.g., <Elvis_Presley>	skos:prefLabel	"Elvis Presley"@eng .
+
+• Alternate labels, e.g.,
+
+<Elvis_Presley>	rdfs:label	"Presley, Elvis"@eng .
+<Elvis_Presley>     rdfs:label	"Elvis Presley"@eng .
+<Elvis_Presley>	rdfs:label	"The King (entertainer)"@eng .
+
+• Common misspellings
+
+<Elvis_Presley>	rdfs:label	"Elvis prestly"@eng .
+<Elvis_Presley>	rdfs:label	"Elvis Pres;ey"@eng .
+<Elvis_Presley>	rdfs:label	"Elivs"@eng .
+<Elvis_Presley>	rdfs:label	"Elvis Pressly"@eng .
+
+The full load for:
+
+        load_basic_yago,
+        load_core_yago,
+        add_wordnet_domains,
+        add_geo_yago.
+
+is:
+
+YAGO 2 has 61029296 triples in it.
+YAGO 2 has 7543988 resources in it.
+YAGO 2 has 99 properties in it.
+YAGO 2 has 21592230 literals in it.
+
+and swipl then has memory size 11.18 GB.
+
+----------
+
+MAJOR DIFFERENCES
+
+• Files need to be cleaned to move chars inside tags that swi-prolog semweb rdf_load does not accept.
+
+• Some files are huge:
+   --yagoTransitiveType, 2.71G -- we don't need this, as we can compute them as needed
+   --yagoWikipediaInfo, 2.46G
+   --yagoGeonamesData, 1.71G
+   --yagoSources
+
+----------
+
+MINOR DIFFERENCES
+
+• Resource names may differ. In YAGO 1, <Denver,_Colorado> was the resource name for
+Denver. In YAGO 2, it is <Denver>.
+
+    --HOW TO USE YAGO 2S -- FROM THE DOC--
+
+YAGO classifies each entity into a taxonomy of classes. Every entity is an instance of one or multiple classes. Every
+class (except the root class) is a subclass of one or multiple classes. This yields a hierarchy of classes — the
+taxonomy. The YAGO taxonomy is the backbone of the ontology, and is designed with much care and attention to
+correctness. For those interested in the details of that taxonomy, we provide here a more in-depth explanation of the
+classes. The taxonomy consists of 4 layers:
+
+The root node of the taxonomy is rdfs:Resource. It includes entities, but also properties, literals, etc. rdfs:Resource
+has a subclass owl:Thing, which is the class of things (entities).  Under owl:Thing, there is the class taxonomy from
+WordNet. Each class name is of the form <wordnet_XXX_YYY>, where XXX is the name of the concept (e.g., singer), and YYY
+is the WordNet 3.0 synset id of the concept (e.g., 110599806). For example, the class of singers is
+<wordnet_singer_110599806>. Each class is connected to its more general class by the rdfs:subclassOf relationship.  The
+middle layer of the taxonomy consists of classes that have been derived from Wikipedia categories. For example, one
+class is <wikicategory_American_rock_singers>, derived from the Wikipedia category American rock singers. Each of these
+classes is connected to one class of the WordNet layer by a rdfs:subclassOf relationship. In the example,
+<wikicategory_American_rock_singers> rdfs:subclassOf <wordnet_singer_110599806>. Not all Wikipedia categories become
+classes in YAGO.  The lowest layer of the taxonomy is the layer of instances. Instances comprise individual entities
+such as rivers, people, or movies. For example, this layer contains <Elvis_Presley>. Each instance is connected to one
+or multiple classes of the higher layers by the relationship rdf:type. In the example: <Elvis_Presley> rdf:type
+<wikicategory_American_rock_singers>.  This way, you can walk from the instance up to its class by rdf:type, and then
+further up by rdfs:subclassOf.
+
+In YAGO (as in RDF), each fact consists of a subject, a predicate, and an object. Every fact can have a fact id. The
+fact id is simply computed as a hash from the subject, predicate, and object of the fact. For example, the fact
+<Elvis_Presley> rdf:type <person> could have the fact identifier <id_42>. YAGO contains facts about these fact
+identifiers. For example, YAGO contains
+
+<id_42> <occursSince> "1935-01-08"
+<id_42> <occursUntil> "1977-08-16"
+<id_42> <extractionSource> <http://en.wikipedia.org/Elvis_Presley>
+
+These facts mean that Elvis was a person from the year 1935 to the year 1977, and that this fact was found in Wikipedia.
+
+    --WHAT I NEED--
+
+Themes:
+
+TAXONOMY,
+CORE,
+GEONAMES,
+LINK -- just these parts:
+   yagoWordnetDomainHierarchy,
+   yagoPreferredMeanings,
+   yagoWordnetIds, -- optional, if we want to tie this into WordNet
+   % ...and if we want an additional topic-based mapping of WN classes:
+   yagoWordnetDomainHierarchy -- The hierarchy of WordNet Domains from wndomains.fbk.eu, if we want this additional more
+     topic-oriented additional taxonomy built over WordNet. Looks useful.
+   yagoWordnetDomains-- Thematic domains from the Wordnet Domains project of the Fondazione Bruno Kessler,
+     wndomains.fbk.eu . These domains group WordNet classes into topics such as 'Music', 'Arts', or 'Soccer'.
+
+We can skip all of:
+OTHER
+MULTILINGUAL
+WIKIPEDIA
+and any parts of LINK we don't want.
+
+Let us add a loading switch, taxonomy_type:
+
+if it is full_taxonomy, then we load:
+
+   [yagoTypes, yagoTaxonomy]
+
+if it is simple_taxonomy, then we load:
+
+   [yagoSimpleTypes, yagoSimpleTaxonomy]
+
+It should one of those two.
+
+It looks like the full taxonomy would have the advantage of facilitating mapping to Wikipedia pages while the simplified
+taxonomy has the advantage of including some owl disjoint assertions that may be useful for reasoning, and also is
+simpler.
+
+                         FILES
+
+The files with example triples:
+
+
+YagoLabels
+---------
+
+yagoLabels.ttl -- labels for resources [critical]
+
+<Bill_Murray>	rdfs:label	"Bill Murray"@eng .
+<Bill_Murray>	rdfs:label	"William James Murray" .
+<Bill_Murray>	<hasGivenName>	"Bill"@eng .
+<Bill_Murray>	rdfs:label	"Bill murry"@eng .
+<Bill_Murray>	rdfs:label	"The Murricane"@eng .
+...
+<Bill_Murray>	skos:prefLabel	"Bill Murray"@eng .
+...
+<Bill_Murray>	<isPreferredMeaningOf>	"Bill Murray"@eng .
+...
+<Elvis_Presley's_Sun_recordings>	<isPreferredMeaningOf>	"Elvis Presley's Sun recordings"@eng .
+...
+<Deusto_(Metro_Bilbao)>	skos:prefLabel	"Deusto (Metro Bilbao)"@eng .
+
+YagoSources
+----------
+
+yagoSources.ttl -- facts about where resources came from [skippable]
+
+NOTE: This file is the largest of all, about 7.5 GBytes originally, so I REMOVE IT after expanding the original zip, as
+I do not need it.
+
+#@ <id_712lr5_115_18ku5z>
+<id_1qdiv89_k56_zilesh>	<extractionSource>	<http://en.wikipedia.org/wiki/List_of_airports_by_IATA_code:_A> .
+<id_712lr5_115_18ku5z>	<extractionTechnique>	"FlightIATAcodeExtractor" .
+#@ <id_u95fig_115_18ku5z>
+<id_lr6wli_k56_zilesi>	<extractionSource>	<http://en.wikipedia.org/wiki/List_of_airports_by_IATA_code:_A> .
+<id_u95fig_115_18ku5z>	<extractionTechnique>	"FlightIATAcodeExtractor" .
+#@ <id_1j59xg9_115_18ku5z>
+<id_si99v4_k56_zilesj>	<extractionSource>	<http://en.wikipedia.org/wiki/List_of_airports_by_IATA_code:_A> .
+<id_1j59xg9_115_18ku5z>	<extractionTechnique>	"FlightIATAcodeExtractor" .
+
+YagoTypes
+----------
+
+yagoTypes -- the immediate class type of each resource [optional if we have yagoTransitiveType, otherwise critical]
+
+<Bill_Murray>	rdf:type	<wikicategory_American_comedians> .
+<Bill_Murray>	rdf:type	<wikicategory_Living_people> .
+<Bill_Murray>	rdf:type	<wikicategory_American_comedians_of_Irish_descent> .
+<Bill_Murray>	rdf:type	<wikicategory_American_screenwriters> .
+<Bill_Murray>	rdf:type	<wikicategory_American_film_actors> .
+<Bill_Murray>	rdf:type	<wikicategory_People_from_Wilmette,_Illinois> .
+<Bill_Murray>	rdf:type	<wikicategory_American_voice_actors> .
+<Bill_Murray>	rdf:type	<wikicategory_Actors_from_Chicago,_Illinois> .
+<Bill_Murray>	rdf:type	<wikicategory_American_television_actors> .
+<Bill_Murray>	rdf:type	<wordnet_person_100007846> .
+<Bill_Murray>	rdf:type	<wikicategory_Second_City_alumni> .
+<Scouting_in_Iowa>	rdf:type	<wikicategory_Youth_organizations_based_in_Iowa> .
+<Collective_unconscious>	rdf:type	<wikicategory_Jungian_archetypes> .
+<Brian_Doyle-Murray>	rdf:type	<wikicategory_Living_people> .
+<Brian_Doyle-Murray>	rdf:type	<wikicategory_American_comedians_of_Irish_descent> .
+
+YagoTransitiveTypes
+----------------
+
+yagoTransitiveType -- the immediate AND inherited wordnet class types of each resource [critical]
+
+# Transitive closure of all rdf:type/rdfs:subClassOf facts
+# TAXONOMY
+
+<Meli_Bolobolo>	rdf:type	<yagoLegalActor> .
+<Meli_Bolobolo>	rdf:type	<yagoLegalActorGeo> .
+<Meli_Bolobolo>	rdf:type	owl:Thing .
+<Bill_Murray>	rdf:type	<wikicategory_Actors_from_Chicago,_Illinois> .
+<Bill_Murray>	rdf:type	<wikicategory_American_comedians> .
+<Bill_Murray>	rdf:type	<wikicategory_American_comedians_of_Irish_descent> .
+<Bill_Murray>	rdf:type	<wikicategory_American_film_actors> .
+<Bill_Murray>	rdf:type	<wikicategory_American_screenwriters> .
+<Bill_Murray>	rdf:type	<wikicategory_American_television_actors> .
+<Bill_Murray>	rdf:type	<wikicategory_American_voice_actors> .
+<Bill_Murray>	rdf:type	<wikicategory_Living_people> .
+<Bill_Murray>	rdf:type	<wikicategory_People_from_Wilmette,_Illinois> .
+<Bill_Murray>	rdf:type	<wikicategory_Second_City_alumni> .
+<Bill_Murray>	rdf:type	<wordnet_actor_109765278> .
+<Bill_Murray>	rdf:type	<wordnet_alumnus_109786338> .
+<Bill_Murray>	rdf:type	<wordnet_causal_agent_100007347> .
+<Bill_Murray>	rdf:type	<wordnet_comedian_109940146> .
+<Bill_Murray>	rdf:type	<wordnet_communicator_109610660> .
+<Bill_Murray>	rdf:type	<wordnet_entertainer_109616922> .
+<Bill_Murray>	rdf:type	<wordnet_intellectual_109621545> .
+<Bill_Murray>	rdf:type	<wordnet_living_thing_100004258> .
+<Bill_Murray>	rdf:type	<wordnet_object_100002684> .
+<Bill_Murray>	rdf:type	<wordnet_organism_100004475> .
+<Bill_Murray>	rdf:type	<wordnet_performer_110415638> .
+<Bill_Murray>	rdf:type	<wordnet_person_100007846> .
+<Bill_Murray>	rdf:type	<wordnet_physical_entity_100001930> .
+<Bill_Murray>	rdf:type	<wordnet_scholar_110557854> .
+<Bill_Murray>	rdf:type	<wordnet_screenwriter_110564400> .
+<Bill_Murray>	rdf:type	<wordnet_scriptwriter_110564905> .
+<Bill_Murray>	rdf:type	<wordnet_whole_100003553> .
+<Bill_Murray>	rdf:type	<wordnet_writer_110794014> .
+<Bill_Murray>	rdf:type	<yagoLegalActor> .
+<Bill_Murray>	rdf:type	<yagoLegalActorGeo> .
+<Bill_Murray>	rdf:type	owl:Thing .
+<Springfield_District_Court>	rdf:type	<wikicategory_Buildings_and_structures_in_Springfield,_Massachusetts> .
+<Springfield_District_Court>	rdf:type	<wordnet_artifact_100021939> .
+<Springfield_District_Court>	rdf:type	<wordnet_building_102913152> .
+<Springfield_District_Court>	rdf:type	<wordnet_object_100002684> .
+<Springfield_District_Court>	rdf:type	<wordnet_physical_entity_100001930> .
+<Springfield_District_Court>	rdf:type	<wordnet_structure_104341686> .
+<Springfield_District_Court>	rdf:type	<wordnet_whole_100003553> .
+<Springfield_District_Court>	rdf:type	<yagoGeoEntity> .
+<Springfield_District_Court>	rdf:type	<yagoPermanentlyLocatedEntity> .
+<Springfield_District_Court>	rdf:type	owl:Thing .
+<Flint_Community_Schools>	rdf:type	<wikicategory_School_districts_in_Michigan> .
+<Flint_Community_Schools>	rdf:type	<wordnet_administrative_district_108491826> .
+
+YagoWikipediaInfo
+----------------
+
+yagoWikipediaInfo.ttl -- the Wikipedia article for a resource and what resources it links to [optional]
+
+Useful to show connections to related subjects, without specifying the kind of relation,
+along with showing the relevant Wikipedia article for a resource.
+
+<Alphonse_Mucha>	<linksTo>	<Kevin_Wasden> .
+<Alphonse_Mucha>	<linksTo>	<Czechs> .
+<Bill_Murray>	<hasWikipediaArticleLength>	"37964"^^xsd:integer .
+<Bill_Murray>	<hasWikipediaUrl>	<http://en.wikipedia.org/wiki/Bill_Murray> .
+<Bill_Murray>	<linksTo>	<The_Darjeeling_Limited> .
+<Bill_Murray>	<linksTo>	<St._Augustine,_Florida> .
+<Bill_Murray>	<linksTo>	<Charles_Rocket> .
+<Bill_Murray>	<linksTo>	<Salt_Lake_Sting> .
+<Bill_Murray>	<linksTo>	<Gilda_Radner> .
+<Bill_Murray>	<linksTo>	<Village_Voice_Film_Poll> .
+<Bill_Murray>	<linksTo>	<Billy_Bob_Thornton> .
+<Bill_Murray>	<linksTo>	<University_of_Paris> .
+<Bill_Murray>	<linksTo>	<Ghostbusters> .
+<Bill_Murray>	<linksTo>	<Peter_Venkman> .
+<Bill_Murray>	<linksTo>	<Los_Angeles_Film_Critics_Association> .
+<Bill_Murray>	<linksTo>	<Las_Vegas_Valley> .
+<Bill_Murray>	<linksTo>	<New_York_Film_Critics_Circle_Award_for_Best_Actor> .
+<Bill_Murray>	<linksTo>	<Jim_Jarmusch> .
+<Bill_Murray>	<linksTo>	<Cradle_Will_Rock> .
+<Bill_Murray>	<linksTo>	<Where_the_Buffalo_Roam> .
+<Bill_Murray>	<linksTo>	<City_of_Ember> .
+<Bill_Murray>	<linksTo>	<This_Old_Cub> .
+<Bill_Murray>	<linksTo>	<Charleston_RiverDogs> .
+<Bill_Murray>	<linksTo>	<American_Comedy_Awards> .
+<Bill_Murray>	<linksTo>	<John_Murray_(actor)> .
+<Bill_Murray>	<linksTo>	<Quick_Change> .
+<Bill_Murray>	<linksTo>	<Chlotrudis_Award_for_Best_Supporting_Actor> .
+<Bill_Murray>	<linksTo>	<Regis_University> .
+<Bill_Murray>	<linksTo>	<Jane_Curtin> .
+<Bill_Murray>	<linksTo>	<Hunter_S._Thompson> .
+<Bill_Murray>	<linksTo>	<Adrian_Dominican_Sisters> .
+<Bill_Murray>	<linksTo>	<GQ> .
+<Bill_Murray>	<linksTo>	<The_Royal_Tenenbaums> .
+<Bill_Murray>	<linksTo>	<Primetime_Emmy_Award_for_Outstanding_Variety,_Music_or_Comedy_Series> .
+<Bill_Murray>	<linksTo>	<American_Professional_Soccer_League> .
+<Bill_Murray>	<linksTo>	<Charleston,_South_Carolina> .
+<Bill_Murray>	<linksTo>	<Meatballs_(film)> .
+<Bill_Murray>	<linksTo>	<Saturday_Night_Live> .
+<Bill_Murray>	<linksTo>	<Joel_Cohen_(writer)> .
+<Bill_Murray>	<linksTo>	<Broadcast_Film_Critics_Association_Award_for_Best_Actor> .
+<Bill_Murray>	<linksTo>	<Washington_D.C._Area_Film_Critics_Association> .
+<Bill_Murray>	<linksTo>	<Ralph_Nader> .
+<Bill_Murray>	<linksTo>	<Groundhog_Day_(film)> .
+<Bill_Murray>	<linksTo>	<Chicago_Film_Critics_Association_Award_for_Best_Supporting_Actor> .
+<Bill_Murray>	<linksTo>	<DVD> .
+<Bill_Murray>	<linksTo>	<Crossroads_Guitar_Festival> .
+<Bill_Murray>	<linksTo>	<Bunny_Breckinridge> .
+<Bill_Murray>	<linksTo>	<Mystic_River_(film)> .
+<Bill_Murray>	<linksTo>	<New_York_Film_Critics_Circle_Award_for_Best_Supporting_Actor> .
+<Bill_Murray>	<linksTo>	<James_Belushi> .
+<Bill_Murray>	<linksTo>	<Garfield_(character)> .
+<Bill_Murray>	<linksTo>	<Mr._Mike's_Mondo_Video> .
+<Bill_Murray>	<linksTo>	<What_About_Bob?> .
+<Bill_Murray>	<linksTo>	<Caddyshack> .
+<Bill_Murray>	<linksTo>	<Wilmette,_Illinois> .
+<Bill_Murray>	<linksTo>	<Wild_Things> .
+<Bill_Murray>	<linksTo>	<Garfield> .
+<Bill_Murray>	<linksTo>	<Get_Low_(film)> .
+<Bill_Murray>	<linksTo>	<Ghostbusters_(franchise)> .
+<Bill_Murray>	<linksTo>	<MTV_Movie_Awards> .
+<Bill_Murray>	<linksTo>	<Wes_Anderson> .
+<Bill_Murray>	<linksTo>	<Saturn_Award_for_Best_Actor> .
+<Bill_Murray>	<linksTo>	<American_Broadcasting_Company> .
+<Bill_Murray>	<linksTo>	<CraveOnline> .
+<Bill_Murray>	<linksTo>	<Super_Bowl> .
+<Bill_Murray>	<linksTo>	<Hudson_Valley_Renegades> .
+<Bill_Murray>	<linksTo>	<Franklin_D._Roosevelt> .
+<Bill_Murray>	<linksTo>	<Saturday_Night_Live_with_Howard_Cosell> .
+<Bill_Murray>	<linksTo>	<Scrooged> .
+<Bill_Murray>	<linksTo>	<Charlie's_Angels_(film)> .
+<Bill_Murray>	<linksTo>	<Rushmore_(film)> .
+<Bill_Murray>	<linksTo>	<Little_Miss_Sunshine> .
+<Bill_Murray>	<linksTo>	<The_New_York_Times> .
+<Bill_Murray>	<linksTo>	<National_Society_of_Film_Critics> .
+<Bill_Murray>	<linksTo>	<Osmosis_Jones> .
+<Bill_Murray>	<linksTo>	<Joel_Coen> .
+<Bill_Murray>	<linksTo>	<Late_Night_with_David_Letterman> .
+<Bill_Murray>	<linksTo>	<Del_Close> .
+<Bill_Murray>	<linksTo>	<Chicago> .
+<Bill_Murray>	<linksTo>	<BAFTA_Award_for_Best_Actor_in_a_Leading_Role> .
+<Bill_Murray>	<linksTo>	<Online_Film_Critics_Society_Award_for_Best_Actor> .
+<Bill_Murray>	<linksTo>	<Los_Angeles_Film_Critics_Association_Award_for_Best_Actor> .
+<Bill_Murray>	<linksTo>	<Brian_Doyle-Murray> .
+<Bill_Murray>	<linksTo>	<Late_Show_with_David_Letterman> .
+<Bill_Murray>	<linksTo>	<AT&T_Pebble_Beach_National_Pro-Am> .
+<Bill_Murray>	<linksTo>	<Doubleday_(publisher)> .
+<Bill_Murray>	<linksTo>	<Ghostbusters_II> .
+<Bill_Murray>	<linksTo>	<Wild_Bill_Hickok> .
+<Bill_Murray>	<linksTo>	<Golden_Globe_Award> .
+<Bill_Murray>	<linksTo>	<TVTV> .
+<Bill_Murray>	<linksTo>	<Lost_in_Translation_(film)> .
+<Bill_Murray>	<linksTo>	<Eric_Clapton> .
+<Bill_Murray>	<linksTo>	<Bertolt_Brecht> .
+<Bill_Murray>	<linksTo>	<Get_Smart_(film)> .
+<Bill_Murray>	<linksTo>	<Fantastic_Mr._Fox_(film)> .
+<Bill_Murray>	<linksTo>	<Columbia_Pictures> .
+<Bill_Murray>	<linksTo>	<Rutland_Weekend_Television> .
+<Bill_Murray>	<linksTo>	<Michigan> .
+<Bill_Murray>	<linksTo>	<Los_Angeles_Film_Critics_Association_Award_for_Best_Supporting_Actor> .
+<Bill_Murray>	<linksTo>	<Auburn_Doubledays> .
+<Bill_Murray>	<linksTo>	<Sean_Penn> .
+<Bill_Murray>	<linksTo>	<Denver> .
+<Bill_Murray>	<linksTo>	<Phoenix_Film_Critics_Society_Award_for_Best_Cast> .
+<Bill_Murray>	<linksTo>	<Chicago_Air_&_Water_Show> .
+<Bill_Murray>	<linksTo>	<Jacksonville_Jaguars> .
+<Bill_Murray>	<linksTo>	<Kit_Carson> .
+<Bill_Murray>	<linksTo>	<National_Society_of_Film_Critics_Award_for_Best_Supporting_Actor> .
+<Bill_Murray>	<linksTo>	<Chlotrudis_Award_for_Best_Actor> .
+<Bill_Murray>	<linksTo>	<San_Francisco_Film_Critics_Circle_Award_for_Best_Actor> .
+<Bill_Murray>	<linksTo>	<Broadcast_Film_Critics_Association_Award_for_Best_Cast> .
+<Bill_Murray>	<linksTo>	<Cinémathèque_Française> .
+<Bill_Murray>	<linksTo>	<Ancestry.com> .
+<Bill_Murray>	<linksTo>	<John_Cusack> .
+<Bill_Murray>	<linksTo>	<Manhattan> .
+<Bill_Murray>	<linksTo>	<Toronto_Film_Critics_Association_Award_for_Best_Actor> .
+<Bill_Murray>	<linksTo>	<Kingpin_(film)> .
+<Bill_Murray>	<linksTo>	<Ron_Santo> .
+<Bill_Murray>	<linksTo>	<New_York_City> .
+<Bill_Murray>	<linksTo>	<John_Belushi> .
+<Bill_Murray>	<linksTo>	<The_Man_Who_Knew_Too_Little> .
+<Bill_Murray>	<linksTo>	<Loyola_Academy> .
+<Bill_Murray>	<linksTo>	<Independent_Spirit_Award_for_Best_Supporting_Male> .
+<Bill_Murray>	<linksTo>	<Bernie_Mac> .
+<Bill_Murray>	<linksTo>	<Primetime_Emmy_Award_for_Outstanding_Writing_for_a_Variety,_Music_or_Comedy_Program> .
+<Bill_Murray>	<linksTo>	<Comedy_Central> .
+<Bill_Murray>	<linksTo>	<Baltimore> .
+<Bill_Murray>	<linksTo>	<Aramis_Ramírez> .
+<Bill_Murray>	<linksTo>	<Howard_Franklin> .
+<Bill_Murray>	<linksTo>	<Boston_Society_of_Film_Critics_Award_for_Best_Actor> .
+<Bill_Murray>	<linksTo>	<Man_Equals_Man> .
+<Bill_Murray>	<linksTo>	<National_Society_of_Film_Critics_Award_for_Best_Actor> .
+<Bill_Murray>	<linksTo>	<Chicago_Cubs> .
+<Bill_Murray>	<linksTo>	<Polonius> .
+<Bill_Murray>	<linksTo>	<Willy_Wonka> .
+<Bill_Murray>	<linksTo>	<Chicago_Bulls> .
+<Bill_Murray>	<linksTo>	<Moonrise_Kingdom> .
+<Bill_Murray>	<linksTo>	<Joel_Murray> .
+<Bill_Murray>	<linksTo>	<MTV_Movie_Award_for_Best_Comedic_Performance> .
+<Bill_Murray>	<linksTo>	<Salt_Lake_City_Trappers> .
+<Bill_Murray>	<linksTo>	<Saint_Paul,_Minnesota> .
+<Bill_Murray>	<linksTo>	<Dan_Aykroyd> .
+<Bill_Murray>	<linksTo>	<Ed_Wood_(film)> .
+<Bill_Murray>	<linksTo>	<Passion_Play_(film)> .
+<Bill_Murray>	<linksTo>	<Monsters,_Inc.> .
+<Bill_Murray>	<linksTo>	<Scream_Awards> .
+<Bill_Murray>	<linksTo>	<Quinnipiac_University> .
+<Bill_Murray>	<linksTo>	<Who_Framed_Roger_Rabbit> .
+<Bill_Murray>	<linksTo>	<Brockton_Rox> .
+<Bill_Murray>	<linksTo>	<Tootsie> .
+<Bill_Murray>	<linksTo>	<Stripes_(film)> .
+<Bill_Murray>	<linksTo>	<All_You_Need_Is_Cash> .
+<Bill_Murray>	<linksTo>	<She's_Having_a_Baby> .
+<Bill_Murray>	<linksTo>	<Towson_University> .
+<Bill_Murray>	<linksTo>	<Screen_Actors_Guild_Award_for_Outstanding_Performance_by_a_Male_Actor_in_a_Leading_Role> .
+<Bill_Murray>	<linksTo>	<Next_Stop,_Greenwich_Village> .
+<Bill_Murray>	<linksTo>	<Broken_Flowers> .
+<Bill_Murray>	<linksTo>	<Utica_Blue_Sox> .
+<Bill_Murray>	<linksTo>	<Eric_Idle> .
+<Bill_Murray>	<linksTo>	<The_Limits_of_Control> .
+<Bill_Murray>	<linksTo>	<Satellite_Award_for_Best_Supporting_Actor_–_Motion_Picture> .
+<Bill_Murray>	<linksTo>	<Rockland_County,_New_York> .
+<Bill_Murray>	<linksTo>	<Emmy_Award> .
+<Bill_Murray>	<linksTo>	<Phoenix_Film_Critics_Society_Award_for_Best_Actor> .
+<Bill_Murray>	<linksTo>	<Larger_than_Life_(film)> .
+<Bill_Murray>	<linksTo>	<The_Razor's_Edge> .
+<Bill_Murray>	<linksTo>	<NBC> .
+<Bill_Murray>	<linksTo>	<Space_Jam> .
+<Bill_Murray>	<linksTo>	<Nothing_Lasts_Forever_(film)> .
+<Bill_Murray>	<linksTo>	<The_Life_Aquatic_with_Steve_Zissou> .
+<Bill_Murray>	<linksTo>	<Sofia_Coppola> .
+<Bill_Murray>	<linksTo>	<Los_Angeles> .
+<Bill_Murray>	<linksTo>	<Chicago_Bears> .
+<Bill_Murray>	<linksTo>	<St._Paul_Saints> .
+<Bill_Murray>	<linksTo>	<The_National_Lampoon_Radio_Hour> .
+<Bill_Murray>	<linksTo>	<Southeastern_Film_Critics_Association_Award_for_Best_Actor> .
+<Bill_Murray>	<linksTo>	<Chevy_Chase> .
+<Bill_Murray>	<linksTo>	<Academy_Award_for_Best_Actor> .
+<Bill_Murray>	<linksTo>	<Chicago_Film_Critics_Association_Award_for_Best_Actor> .
+<Bill_Murray>	<linksTo>	<Zombieland> .
+<Bill_Murray>	<linksTo>	<Davy_Crockett> .
+<Bill_Murray>	<linksTo>	<Murray_the_K> .
+<Scouting_in_Iowa>	<hasWikipediaArticleLength>	"6284"^^xsd:integer .
+<Scouting_in_Iowa>	<hasWikipediaUrl>	<http://en.wikipedia.org/wiki/Scouting_in_Iowa> .
+<Scouting_in_Iowa>	<linksTo>	<Rock_Island,_Illinois> .
+<Scouting_in_Iowa>	<linksTo>	<Boy_Scouts_of_America> .
+
+YagoGeonamesData
+----------------
+
+yagoGeonamesData [required for geographic reasoning]
+Maps from resource to Long, Lat, and kind of Geonames class.
+
+<London_Creek>	rdfs:subClassOf	<geoclass_stream> .
+<London_Creek>	<hasGeonamesEntityId>	"6058562" .
+<Londonderry>	<hasLatitude>	"45.48345"^^<degrees> .
+<Londonderry>	<hasLongitude>	"-63.5987"^^<degrees> .
+<Londonderry>	rdfs:subClassOf	<geoclass_area> .
+<Londonderry>	<hasGeonamesEntityId>	"6058563" .
+<Londonderry>	<hasLatitude>	"45.58346"^^<degrees> .
+<Londonderry>	<hasLongitude>	"-65.39882"^^<degrees> .
+<Londonderry>	rdfs:subClassOf	<geoclass_area> .
+<Londonderry>	<hasGeonamesEntityId>	"6058564" .
+<Londonderry>	<hasLatitude>	"47.5501"^^<degrees> .
+<Londonderry>	<hasLongitude>	"-81.51646"^^<degrees> .
+<Londonderry>	rdfs:subClassOf	<geoclass_area> .
+<Londonderry>	<hasGeonamesEntityId>	"6058565" .
+
+YagoMultilingualInstanceLabels
+--------------------------
+
+yagoMultilingualInstanceLabels -- [skip]
+
+<Ethical_naturalism>	rdfs:label	"Eettinen naturalismi"@fin .
+<Ethical_naturalism>	rdfs:label	"Etisk naturalism"@swe .
+<Elvis_Presley>	rdfs:label	"Elvis Presley"@afr .
+<Elvis_Presley>	rdfs:label	"إلفيس بريسلي"@ara .
+<Elvis_Presley>	rdfs:label	"Elvis Presley"@arg .
+<Elvis_Presley>	rdfs:label	"Elvis Presli"@aze .
+<Elvis_Presley>	rdfs:label	"এলভিস প্রেসলি"@ben .
+<Elvis_Presley>	rdfs:label	"Элвіс Прэслі"@bel .
+<Elvis_Presley>	rdfs:label	"Elvis Presley"@bcl .
+<Elvis_Presley>	rdfs:label	"Елвис Пресли"@bul .
+<Elvis_Presley>	rdfs:label	"ཨེལ་ཝེ་སི་ཕིར་ཟི་ལཱེ།"@bod .
+<Elvis_Presley>	rdfs:label	"Elvis Presley"@bos .
+
+YagoFacts
+--------------------------
+
+yagoFacts --> [critical]
+
+...
+<Elvis_Presley>	<created>	<Talk_About_the_Good_Times> .
+...
+<Bill_Murray>	<actedIn>	<Scrooged> .
+<Bill_Murray>	<hasWonPrize>	<Independent_Spirit_Awards> .
+
+YagoSimpleTypes
+--------------------------
+
+yagoSimpleTypes -->[optional, use if taxonomy switch = simple, works along aside yagoSimpleTaxonomy, has Wordnet-only types]
+
+<Bill_Murray>	rdf:type	<wordnet_actor_109765278> .
+<Bill_Murray>	rdf:type	<wordnet_person_100007846> .
+<Bill_Murray>	rdf:type	<wordnet_comedian_109940146> .
+<Bill_Murray>	rdf:type	<wordnet_alumnus_109786338> .
+...
+<Elvis_Presley>	rdf:type	<wordnet_performer_110415638> .
+<Elvis_Presley>	rdf:type	<wordnet_musician_110339966> .
+
+YagoLiteralFacts
+--------------------------
+
+yagoLiteralFacts --> [Facts and figures, critical]
+
+<James_C._Shannon>	<wasBornOnDate>	"1896-07-21"^^xsd:date .
+<Wolfpack_(video_game)>	<happenedOnDate>	"1990-##-##"^^xsd:date .
+<Bout-du-Pont-de-Larn>	<hasArea>	"7630000.0"^^<m^2> .
+<Passiflora_arbelaezii>	<wasCreatedOnDate>	"1957-##-##"^^xsd:date .
+<Birchwood_Airport>	<hasLongitude>	"-149.5"^^<degrees> .
+
+YagoImportantTypes
+--------------------------
+
+yagoImportantTypes --> [seems to distill the single best type for MANY, but not all resources,
+                                          e.g., <Adolf_Hitler> and <Denver, Colorado> are  included...
+                                          optional??]
+
+<Achilles>	rdf:type	<wordnet_hero_110325013> .
+<Abraham_Lincoln>	rdf:type	<wordnet_president_110467179> .
+<Aristotle>	rdf:type	<wordnet_writer_110794014> .
+<An_American_in_Paris>	rdf:type	<wikicategory_Symphonic_poems> .
+<Academy_Award_for_Best_Art_Direction>	rdf:type	<wordnet_award_106696483> .
+<Academy_Award>	rdf:type	<wordnet_award_106696483> .
+<Actrius>	rdf:type	<wordnet_movie_106613686> .
+<Animalia_(book)>	rdf:type	<wordnet_book_106410904> .
+<International_Atomic_Time>	rdf:type	<wikicategory_Time_scales> .
+<Ayn_Rand>	rdf:type	<wordnet_novelist_110363573> .
+<Alain_Connes>	rdf:type	<wordnet_mathematician_110301261> .
+<Allan_Dwan>	rdf:type	<wikicategory_American_film_directors> .
+<Algeria>	rdf:type	<wordnet_country_108544813> .
+<Agricultural_science>	rdf:type	<wordnet_abstraction_100002137> .
+<Amoeboid>	rdf:type	<wikicategory_Motile_cells> .
+<Apollo>	rdf:type	<wikicategory_Mythological_Greek_archers> .
+<Andre_Agassi>	rdf:type	<wordnet_player_110439851> .
+...
+<Scouting_in_Wyoming>	rdf:type	<wikicategory_Youth_organizations_based_in_Wyoming> .
+<Alphonse_Mucha>	rdf:type	<wordnet_painter_110391653> .
+<Bill_Murray>	rdf:type	<wordnet_actor_109765278> .
+<Scouting_in_Iowa>	rdf:type	<wikicategory_Youth_organizations_based_in_Iowa> .
+<Collective_unconscious>	rdf:type	<wikicategory_Jungian_archetypes> .
+<Brian_Doyle-Murray>	rdf:type	<wordnet_comedian_109940146> .
+...
+<The_Last_Victim>	rdf:type	<wikicategory_1999_books> .
+<Bill_Murray_(footballer)>	rdf:type	<wordnet_player_110439851> .
+<Pizzo_di_Röd>	rdf:type	<wordnet_mountain_109359803> .
+...
+<Elvis_Presley>	rdf:type	<wordnet_singer_110599806> .
+...
+<World_War_II>	rdf:type	<wordnet_event_100029378> .
+...
+<Union_Station_(Denver,_Colorado)>	rdf:type	<wordnet_station_104306080> .
+...
+<Paul_Harris_(magician)>	rdf:type	<wordnet_magician_110280674> .
+...
+
+YagoMetaFacts
+--------------------------
+
+yagoMetaFacts --> [extracted time info about events, skippable]
+In fact, useless right now as I strip out fact names.
+
+<id_1o8m0b9_1ul_biy06w>	<occursUntil>	"1961-##-##"^^xsd:date .
+#@ <id_1fy54pd_1cp_8nw5q5>
+<id_zppple_1ul_tql8fk>	<occursUntil>	"2010-##-##"^^xsd:date .
+#@ <id_1htz0m2_1co_1tjs0v3>
+<id_n80ujk_1ul_crk1ps>	<occursSince>	"2001-##-##"^^xsd:date .
+#@ <id_1ah6jma_1co_12jutk2>
+<id_1c5x7tb_1ul_pi5dtt>	<occursSince>	"2004-##-##"^^xsd:date .
+#@ <id_1a69zaw_1cp_juxxpj>
+<id_1ro864e_1ul_1hr05cx>	<occursUntil>	"1998-##-##"^^xsd:date .
+#@ <id_17dwkdm_evc_14yuku4>
+<id_yyunc0_1xk_ht1ocs>	<happenedIn>	<Jersey_City,_New_Jersey> .
+#@ <id_1et3f8l_1cp_nvgjc1>
+<id_1pev2u7_1ul_1o9079r>	<occursUntil>	"2003-##-##"^^xsd:date .
+#@ <id_gqj9b6_1co_1o8q8va>
+<id_1jhyjo5_1ul_1ssxldu>	<occursSince>	"1975-##-##"^^xsd:date .
+#@ <id_1j111cu_1co_nk95dv>
+<id_19t1z27_19y_d83htr>	<occursSince>	"2011-12-06"^^xsd:date .
+#@ <id_1ecvcn3_1cp_8nw5q5>
+<id_9vyh84_1ul_shrqtu>	<occursUntil>	"2010-##-##"^^xsd:date .
+#@ <id_1ly725s_1bu_18wd1sr>
+<id_olj41x_14p_12kaxr>	<byTransport>	<Dniproavia> .
+
+YagoDBPediaInstances
+--------------------------
+
+yagoDBPediaInstances --> [Resources that map to DBPedia pages, skippable!]
+
+<A>	owl:sameAs	<http://dbpedia.org/resource/A> .
+<Alabama>	owl:sameAs	<http://dbpedia.org/resource/Alabama> .
+<Achilles>	owl:sameAs	<http://dbpedia.org/resource/Achilles> .
+<Abraham_Lincoln>	owl:sameAs	<http://dbpedia.org/resource/Abraham_Lincoln> .
+<Aristotle>	owl:sameAs	<http://dbpedia.org/resource/Aristotle> .
+<An_American_in_Paris>	owl:sameAs	<http://dbpedia.org/resource/An_American_in_Paris> .
+<Academy_Award_for_Best_Art_Direction>	owl:sameAs	<http://dbpedia.org/resource/Academy_Award_for_Best_Art_Direction> .
+<Academy_Award>	owl:sameAs	<http://dbpedia.org/resource/Academy_Award> .
+<Actrius>	owl:sameAs	<http://dbpedia.org/resource/Actrius> .
+<Animalia_(book)>	owl:sameAs	<http://dbpedia.org/resource/Animalia_(book)> .
+<International_Atomic_Time>	owl:sameAs	<http://dbpedia.org/resource/International_Atomic_Time> .
+<Ayn_Rand>	owl:sameAs	<http://dbpedia.org/resource/Ayn_Rand> .
+...
+<Denver>	owl:sameAs	<http://dbpedia.org/resource/Denver> .
+
+
+YagoDBPediaClasses
+--------------------------
+
+yagoDBPediaClasses --> [How DBPedia classes map to Wikipedia category classes, skippable!]
+...
+<wikicategory_Cities_and_towns_in_Sitamarhi_district>	owl:equivalentClass	<http://dbpedia.org/class/yago/CitiesAndTownsInSitamarhiDistrict> .
+<wikicategory_Albany_Firebirds_players>	owl:equivalentClass	<http://dbpedia.org/class/yago/AlbanyFirebirdsPlayers> .
+<wikicategory_Companies_based_in_Bugulma>	owl:equivalentClass	<http://dbpedia.org/class/yago/CompaniesBasedInBugulma> .
+<wikicategory_Films_directed_by_Leo_D._Maloney>	owl:equivalentClass	<http://dbpedia.org/class/yago/FilmsDirectedByLeoD.Maloney> .
+<wikicategory_Hotels_established_in_1806>	owl:equivalentClass	<http://dbpedia.org/class/yago/HotelsEstablishedIn1806> .
+...
+
+YagoTaxonomy
+--------------------------
+
+yagoTaxonomy --> [Key links from Wikipedia categories to wordnet synsets, and from WN synsets to their parent synsets, critical!]
+
+<wikicategory_Populated_places_in_Stewart_County,_Tennessee>	rdfs:subClassOf	<wordnet_site_108651247> .
+<wikicategory_People_from_Irapuato>	rdfs:subClassOf	<wordnet_person_100007846> .
+<wikicategory_Comic_book_terrorist_organizations>	rdfs:subClassOf	<wordnet_terrorist_organization_108392137> .
+<wikicategory_Boroughs_in_Atlantic_County,_New_Jersey>	rdfs:subClassOf	<wordnet_borough_108540532> .
+<wikicategory_Norwegian_pop_singers>	rdfs:subClassOf	<wordnet_singer_110599806> .
+<wikicategory_Campbellsville_Tigers_football_coaches>	rdfs:subClassOf	<wordnet_football_coach_110101202> .
+<wikicategory_Hospitals_established_in_1909>	rdfs:subClassOf	<wordnet_hospital_103540595> .
+<wordnet_beehive_105257393>	rdfs:subClassOf	<wordnet_hairdo_105256862> .
+
+YagoMultilingualClassLabels
+--------------------------
+
+yagoMultilingualClassLabels -- [skippable]
+
+...
+<wordnet_person_100007846>	rdfs:label	"umuntu"@zul .
+<wordnet_anthropologist_109796323>	rdfs:label	"umuntu oyisazi"@zul .
+<wordnet_compassion_104829550>	rdfs:label	"umunyu"@zul .
+<wordnet_sympathy_107553301>	rdfs:label	"umunyu"@zul .
+<wordnet_compassion_107553741>	rdfs:label	"umunyu"@zul .
+<wordnet_lumber_114943580>	rdfs:label	"umuthi"@zul .
+...
+
+
+YagoWordnetDomains
+--------------------------
+
+yagoWordnetDomains --> [optional, looks useful, except may distract searching for parents in YAGO taxonomy, maps to topics]
+
+<wordnet_causal_agent_100007347>	<hasWordnetDomain>	<wordnetDomain_factotum> .
+<wordnet_person_100007846>	<hasWordnetDomain>	<wordnetDomain_biology> .
+<wordnet_person_100007846>	<hasWordnetDomain>	<wordnetDomain_person> .
+<wordnet_animal_100015388>	<hasWordnetDomain>	<wordnetDomain_animals> .
+<wordnet_animal_100015388>	<hasWordnetDomain>	<wordnetDomain_biology> .
+<wordnet_plant_100017222>	<hasWordnetDomain>	<wordnetDomain_biology> .
+<wordnet_plant_100017222>	<hasWordnetDomain>	<wordnetDomain_plants> .
+<wordnet_object_100002684>	<hasWordnetDomain>	<wordnetDomain_factotum> .
+...
+<wordnetDomain_telecommunication>	rdfs:label	"telecommunication"@eng .
+<wordnetDomain_sociology>	rdf:type	<wordnetDomain> .
+<wordnetDomain_sociology>	rdfs:label	"sociology"@eng .
+<wordnetDomain_rowing>	rdf:type	<wordnetDomain> .
+<wordnetDomain_rowing>	rdfs:label	"rowing"@eng .
+<wordnetDomain_philosophy>	rdf:type	<wordnetDomain> .
+<wordnetDomain_philosophy>	rdfs:label	"philosophy"@eng .
+<wordnetDomain_golf>	rdf:type	<wordnetDomain> .
+<wordnetDomain_golf>	rdfs:label	"golf"@eng .
+<wordnetDomain_commerce>	rdf:type	<wordnetDomain> .
+<wordnetDomain_commerce>	rdfs:label	"commerce"@eng .
+<wordnetDomain_surgery>	rdf:type	<wordnetDomain> .
+<wordnetDomain_surgery>	rdfs:label	"surgery"@eng .
+
+YagoGeonamesEntityIds
+--------------------------
+
+yagoGeonamesEntityIds --> [skippable, maps to Geonames IDs]
+No use to me at present.
+
+<Reijola>	<hasGeonamesEntityId>	"639595"^^xsd:integer .
+<Arorangi>	<hasGeonamesEntityId>	"4035726"^^xsd:integer .
+<Zamysłów>	<hasGeonamesEntityId>	"3080707"^^xsd:integer .
+<Sychandzhuk>	<hasGeonamesEntityId>	"389242"^^xsd:integer .
+<Siecie>	<hasGeonamesEntityId>	"3086105"^^xsd:integer .
+
+YagoWordnetIds
+--------------------------
+
+yagoWordnetIds --> [keep, maps to WordNet synset IDs, looks useful for NLP applications]
+Useful if I further exploit Wordnet.
+
+<wordnet_biont_100006400>	<hasSynsetId>	"100006400" .
+<wordnet_cell_100006484>	<hasSynsetId>	"100006484" .
+<wordnet_causal_agent_100007347>	<hasSynsetId>	"100007347" .
+<wordnet_person_100007846>	<hasSynsetId>	"100007846" .
+<wordnet_animal_100015388>	<hasSynsetId>	"100015388" .
+<wordnet_plant_100017222>	<hasSynsetId>	"100017222" .
+<wordnet_native_100019046>	<hasSynsetId>	"100019046" .
+<wordnet_natural_object_100019128>	<hasSynsetId>	"100019128" .
+<wordnet_substance_100019613>	<hasSynsetId>	"100019613" .
+<wordnet_substance_100020090>	<hasSynsetId>	"100020090" .
+<wordnet_matter_100020827>	<hasSynsetId>	"100020827" .
+<wordnet_food_100021265>	<hasSynsetId>	"100021265" .
+<wordnet_nutrient_100021734>	<hasSynsetId>	"100021734" .
+<wordnet_artifact_100021939>	<hasSynsetId>	"100021939" .
+<wordnet_article_100022903>	<hasSynsetId>	"100022903" .
+<wordnet_psychological_feature_100023100>	<hasSynsetId>	"100023100" .
+<wordnet_cognition_100023271>	<hasSynsetId>	"100023271" .
+<wordnet_motivation_100023773>	<hasSynsetId>	"100023773" .
+<wordnet_attribute_100024264>	<hasSynsetId>	"100024264" .
+
+YagoSimpleTaxonomy
+--------------------------
+
+yagoSimpleTaxonomy --> [optional, use if taxonomy switch = simple, works along aside yagoSimpleTypes]
+
+<wordnet_organization_108008335>	owl:disjointWith	<wordnet_abstraction_100002137> .
+<wordnet_organization_108008335>	owl:disjointWith	<wordnet_physical_entity_100001930> .
+<wordnet_building_102913152>	rdfs:subClassOf	owl:Thing .
+<wordnet_building_102913152>	owl:disjointWith	<wordnet_person_100007846> .
+<wordnet_building_102913152>	owl:disjointWith	<wordnet_organization_108008335> .
+<wordnet_building_102913152>	owl:disjointWith	<yagoGeoEntity> .
+<wordnet_building_102913152>	owl:disjointWith	<wordnet_artifact_100021939> .
+<wordnet_building_102913152>	owl:disjointWith	<wordnet_abstraction_100002137> .
+<wordnet_building_102913152>	owl:disjointWith	<wordnet_physical_entity_100001930> .
+<yagoGeoEntity>	rdfs:subClassOf	owl:Thing .
+<yagoGeoEntity>	owl:disjointWith	<wordnet_person_100007846> .
+<yagoGeoEntity>	owl:disjointWith	<wordnet_organization_108008335> .
+<yagoGeoEntity>	owl:disjointWith	<wordnet_building_102913152> .
+<yagoGeoEntity>	owl:disjointWith	<wordnet_artifact_100021939> .
+<yagoGeoEntity>	owl:disjointWith	<wordnet_abstraction_100002137> .
+<yagoGeoEntity>	owl:disjointWith	<wordnet_physical_entity_100001930> .
+<wordnet_artifact_100021939>	rdfs:subClassOf	owl:Thing .
+<wordnet_artifact_100021939>	owl:disjointWith	<wordnet_person_100007846> .
+<wordnet_artifact_100021939>	owl:disjointWith	<wordnet_organization_108008335> .
+<wordnet_artifact_100021939>	owl:disjointWith	<wordnet_building_102913152> .
+
+YagoGeonamesGlosses
+--------------------------
+
+yagoGeonamesGlosses --> [should include]
+Describes what kind of geographic area this is.
+
+<geoclass_icecap_depression>	<hasGloss>	"a comparatively depressed area on an icecap" .
+<geoclass_ditch>	<hasGloss>	"a small artificial watercourse dug for draining or irrigating the land" .
+<geoclass_drainage_ditch>	<hasGloss>	"a ditch which serves to drain the land" .
+<geoclass_irrigation_ditch>	<hasGloss>	"a ditch which serves to distribute irrigation water" .
+<geoclass_ditch_mouth>	<hasGloss>	"an area where a drainage ditch enters a lagoon, lake or bay" .
+<geoclass_estuary>	<hasGloss>	"a funnel-shaped stream mouth or embayment where fresh water mixes with sea water under tidal influences" .
+<geoclass_fishing_area>	<hasGloss>	"a fishing ground, bank or area where fishermen go to catch fish" .
+<geoclass_fjord>	<hasGloss>	"a long, narrow, steep-walled, deep-water arm of the sea at high latitudes, usually along mountainous coasts" .
+<geoclass_fjords>	<hasGloss>	"long, narrow, steep-walled, deep-water arms of the sea at high latitudes, usually along mountainous coasts" .
+<geoclass_waterfall>	<hasGloss>	"a perpendicular or very steep descent of the water of a stream" .
+<geoclass_mud_flat>	<hasGloss>	"a relatively level area of mud either between high and low tide lines, or subject to flooding" .
+<geoclass_tidal_flat>	<hasGloss>	"a large flat area of mud or sand attached to the shore and alternately covered and uncovered by the tide" .
+<geoclass_glacier>	<hasGloss>	"a mass of ice, usually at high latitudes or high elevations, with sufficient thickness to flow away from the source area in lobes, tongues, or masses" .
+<geoclass_gulf>	<hasGloss>	"a large recess in the coastline, larger than a bay" .
+
+YagoGeonamesGlosses
+--------------------------
+
+yagoGeonamesClasses --> [should include]
+How Geonames classes relate to each other and YAGO.
+
+<geoclass_first-order_administrative_division>	rdfs:subClassOf	<yagoGeoEntity> .
+<geoclass_second-order_administrative_division>	rdfs:subClassOf	<yagoGeoEntity> .
+<geoclass_third-order_administrative_division>	rdfs:subClassOf	<yagoGeoEntity> .
+<geoclass_fourth-order_administrative_division>	rdfs:subClassOf	<yagoGeoEntity> .
+<geoclass_administrative_division>	rdfs:subClassOf	<yagoGeoEntity> .
+<geoclass_leased_area>	rdfs:subClassOf	<yagoGeoEntity> .
+<geoclass_political_entity>	rdfs:subClassOf	<yagoGeoEntity> .
+<geoclass_dependent_political_entity>	rdfs:subClassOf	<yagoGeoEntity> .
+<geoclass_freely_associated_state>	rdfs:subClassOf	<yagoGeoEntity> .
+<geoclass_independent_political_entity>	rdfs:subClassOf	<yagoGeoEntity> .
+<geoclass_section_of_independent_political_entity>	rdfs:subClassOf	<yagoGeoEntity> .
+<geoclass_semi-independent_political_entity>	rdfs:subClassOf	<yagoGeoEntity> .
+<geoclass_parish>	rdfs:subClassOf	<yagoGeoEntity> .
+<geoclass_territory>	rdfs:subClassOf	<yagoGeoEntity> .
+<geoclass_zone>	rdfs:subClassOf	<yagoGeoEntity> .
+<geoclass_buffer_zone>	rdfs:subClassOf	<yagoGeoEntity> .
+<geoclass_seaplane_landing_area>	rdfs:subClassOf	<yagoGeoEntity> .
+<geoclass_anchorage>	rdfs:subClassOf	<yagoGeoEntity> .
+
+YagoGeonamesClassids
+--------------------------
+
+yagoGeonamesClassIds --> [skippable]
+
+<geoclass_first-order_administrative_division>	<hasGeonamesClassId>	"A.ADM1" .
+<geoclass_second-order_administrative_division>	<hasGeonamesClassId>	"A.ADM2" .
+<geoclass_third-order_administrative_division>	<hasGeonamesClassId>	"A.ADM3" .
+<geoclass_fourth-order_administrative_division>	<hasGeonamesClassId>	"A.ADM4" .
+<geoclass_administrative_division>	<hasGeonamesClassId>	"A.ADMD" .
+<geoclass_leased_area>	<hasGeonamesClassId>	"A.LTER" .
+<geoclass_political_entity>	<hasGeonamesClassId>	"A.PCL" .
+<geoclass_dependent_political_entity>	<hasGeonamesClassId>	"A.PCLD" .
+<geoclass_freely_associated_state>	<hasGeonamesClassId>	"A.PCLF" .
+
+YagoSchema
+--------------------------
+
+yagoSchema --> [The domains, ranges and confidence values of YAGO relations, keep]
+
+<hasWebsite>	<hasConfidence>	"0.9740"^^xsd:decimal .
+<happenedIn>	rdfs:range	<yagoGeoEntity> .
+<hasImdb>	rdfs:range	<yagoIdentifier> .
+rdfs:range	rdfs:range	rdfs:Class .
+<hasLanguageCode>	rdfs:range	xsd:string .
+<wasDestroyedOnDate>	rdfs:range	xsd:date .
+<hasChild>	rdfs:domain	<wordnet_person_100007846> .
+<hasGivenName>	rdfs:domain	<wordnet_person_100007846> .
+<objectStartRelation>	rdfs:domain	owl:Thing .
+<isCitizenOf>	rdfs:domain	<wordnet_person_100007846> .
+<wroteMusicFor>	rdfs:range	<wordnet_movie_106613686> .
+<hasWebsite>	rdfs:range	<yagoURL> .
+rdfs:range	rdfs:domain	rdf:Property .
+<hasAirportCode>	rdfs:subPropertyOf	rdfs:label .
+<hasGini>	rdfs:range	<yago0to100> .
+<hasGDP>	rdfs:domain	<wordnet_location_100027167> .
+
+YagoStatistics
+--------------------------
+
+yagoStatistics --> [statistics about YAGO itself, skippable]
+
+<yagoTheme_yagoSchema>	<hasNumber>	"349"^^xsd:integer .
+<yagoTheme_yagoWordnetIds>	<hasNumber>	"68862"^^xsd:integer .
+<yagoTheme_yagoTaxonomy>	<hasNumber>	"451765"^^xsd:integer .
+<yagoTheme_yagoWikipediaInfo>	<hasNumber>	"43822206"^^xsd:integer .
+<yagoTheme_yagoFacts>	<hasNumber>	"4484914"^^xsd:integer .
+<yagoTheme_flights>	<hasNumber>	"109029"^^xsd:integer .
+<yagoTheme_yagoLiteralFacts>	<hasNumber>	"3353659"^^xsd:integer .
+<yagoTheme_yagoLabels>	<hasNumber>	"15372313"^^xsd:integer .
+<yagoTheme_yagoTypes>	<hasNumber>	"9019769"^^xsd:integer .
+<yagoTheme_yagoMetaFacts>	<hasNumber>	"1347954"^^xsd:integer .
+<isConnectedTo>	<hasNumber>	"86246"^^xsd:integer .
+<hasPopulationDensity>	<hasNumber>	"39408"^^xsd:integer .
+<happenedIn>	<hasNumber>	"194161"^^xsd:integer .
+<graduatedFrom>	<hasNumber>	"30389"^^xsd:integer .
+<hasMusicalRole>	<hasNumber>	"32681"^^xsd:integer .
+<hasExport>	<hasNumber>	"175"^^xsd:integer .
+<holdsPoliticalPosition>	<hasNumber>	"6029"^^xsd:integer .
+<hasTLD>	<hasNumber>	"270"^^xsd:integer .
+<isKnownFor>	<hasNumber>	"500"^^xsd:integer .
+<hasGloss>	<hasNumber>	"68990"^^xsd:integer .
+<startedOnDate>	<hasNumber>	"9"^^xsd:integer .
+<participatedIn>	<hasNumber>	"16833"^^xsd:integer .
+<hasPages>	<hasNumber>	"15616"^^xsd:integer .
+<directed>	<hasNumber>	"41811"^^xsd:integer .
+<hasWikipediaArticleLength>	<hasNumber>	"2886878"^^xsd:integer .
+<worksAt>	<hasNumber>	"5134"^^xsd:integer .
+<isPoliticianOf>	<hasNumber>	"3752"^^xsd:integer .
+<hasOfficialLanguage>	<hasNumber>	"964"^^xsd:integer .
+<hasChild>	<hasNumber>	"17695"^^xsd:integer .
+<hasImdb>	<hasNumber>	"9"^^xsd:integer .
+<actedIn>	<hasNumber>	"127513"^^xsd:integer .
+<wasBornOnDate>	<hasNumber>	"805594"^^xsd:integer .
+<linksTo>	<hasNumber>	"38048450"^^xsd:integer .
+<hasAirportCode>	<hasNumber>	"5715"^^xsd:integer .
+rdfs:subClassOf	<hasNumber>	"451765"^^xsd:integer .
+
+       MY LOADING SCHEME
+
+load_simple_taxonomy :- load_yago_files([yagoSimpleTypes,yagoSimpleTaxonomy]).
+
+load_full_taxonomy :- load_yago_files([yagoTypes,yagoTaxonomy]).
+
+load_a_yago_taxonomy(full_taxonomy) :- load_full_taxonomy.
+
+load_a_yago_taxonomy(simple_taxonomy) :- load_simple_taxonomy.
+
+load_core_yago :- load_a_yago_taxonomy,
+                             load_yago_files([yagoLabels,yagoFacts,yagoTransitiveType,yagoLiteralFacts,yagoSchema]).
+
+add_geo_yago :- load_yago_files([yagoGeonamesData,yagoGeonamesGlosses,yagoGeonamesClasses]).
+
+add_wordnet_domains :- load_yago_files([yagoWordnetIds,yagoWordnetDomains]).
+
+add_additional_useful_yago :- load_yago_files([yagoImportantTypes,yagoWikipediaInfo,yagoStatistics]).
+
+add_meta_facts :- load_yago_files([yagoMetaFacts]).
+
+add_entirely_skippable_yago :- load_yago_files([yagoSources,yagoMultilingualInstanceLabels,yagoDBPediaInstances,yagoDBPediaClasses,yagoMultilingualClassLabels,yagoGeonamesEntityIds,yagoGeonamesClassIds]).
+
+------
+CLEANING
+------
+
+All files have to be cleaned by the Python program clean_labels.py, which:
+
+1. Removes the comment lines starting with #@ for the fact IDs.
+
+2. Strips out:
+
+    # to include apostrophe: chars_to_strip_out = re.compile(r'''["`']''')
+    chars_to_strip_out = re.compile(r'''["`]''')
+
+3. Makes these replacements:
+
+    # To add forward slash: ('/','&#47;')
+    # To add backward slash: ('\','&#92;')
+    replacements = [('^','&#94;'),('\\','&#92;')]
+
+4. Each file foo.ttl is renamed to cleaned_foo.ttl after cleaning.
+
+The Python approach worked much better than the Emacs Macros approach below.
+
+I'm keeping it to show the alternate approach, but it is slower and one file at a time.
+
+--------
+ATTEMPTS TO CLEAN WITH EMACS MACROS
+--------
+
+Some major differences require the files to be edited before they can be read in
+by rdf_load without errors. Here are the errors and changes:
+
+1. It has line numbers that start with #$ and these need to be removed with
+
+M-x flush-lines
+
+with regexp #$ in Emacs.
+
+2. These other kinds of lines cause problems (Illegal IRIREF syntax errors)
+
+</km^2>	rdfs:subClassOf	<yagoQuantity> .
+<m^2>	rdfs:subClassOf	<yagoQuantity> .
+
+3. Also lines with a slash in them (Syntax error: Illegal \-escape)
+
+<wikicategory_Concepts_in_logic\\>	rdfs:subClassOf	<wordnet_concept_105835747> .
+<wikicategory_Living_people_with_Parkinson's_disease\\>	rdfs:subClassOf	<wordnet_person_100007846> .
+<wikicategory_People_convicted_by_the_Un\\>	rdfs:subClassOf	<wordnet_person_100007846> .
+<wikicategory_Privately_held_companies_based_in_Tennessee\\>	rdfs:subClassOf	<wordnet_company_108058098> .
+<wikicategory_English_emigrants_to_New_Zealand\\>	rdfs:subClassOf	<wordnet_emigrant_110051975> .
+<wikicategory_Populated_places_in_\\Bond_County,_Illinois>	rdfs:subClassOf	<wordnet_site_108651247> .
+
+Some of these ending with \\> look like the labels are truncated, but that does not explain the last one.
+
+To fix each file:
+
+Move the cursor to the line after the prefix definitions.
+
+@base <http://yago-knowledge.org/resource/> .
+@prefix dbp: <http://dbpedia.org/ontology/> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+then run M-X fix-yago after defining:
+
+;;first version -- replaces ^ everywhere
+(defun fix-yago ()
+       (interactive)
+       (progn 
+         ;;get rid of lines describing fact IDs
+         (save-excursion
+                  (flush-lines "#@"))
+         ;;for any line with tabs having two backslashes, just delete the two backslashes!
+         (save-excursion
+             (replace-string "\\" ""))
+         ;;for any line with an up-arrow (caret), replace it with the HTML escape codes "&#94;"
+         (save-excursion
+             (replace-string "^" "&#94;"))
+         ;;for any line with a forward slash, replace it with the HTML escape codes "	&#47;"
+         (save-excursion
+             (replace-string "/" "&#47;"))))
+
+;;second version -- replaces ^ with HTML escape codes, but only in tags
+(defun fix-yago ()
+       (interactive)
+       (progn 
+         ;;get rid of lines describing fact IDs
+         (save-excursion
+                  (flush-lines "#@"))
+         ;;for ANY LINE with tabs having two backslashes, just delete the two backslashes!
+         (save-excursion
+             (replace-string "\\" ""))
+         ;;ONLY WITHIN A RESOURCE:  replace an up-arrow (caret), replace it with the HTML escape codes "&#94;"
+         (save-excursion
+              (replace-regexp "\\(<[[:alnum:]_:.;#&!,'-/]+\\)\\(\\^\\)\\([[:alnum:]_:.;#&!,'-/]+>\\)" "\\1&#94;\\3"))
+         ;;for ANY LINE with a forward slash, replace it with the HTML escape codes "	&#47;"
+         (save-excursion
+             (replace-string "/" "&#47;"))))
+
+;;third version -- replaces ^ with HTML escape codes, but only in tags
+;;                     -- replaces " with the empty string, but only in tags
+(defun fix-yago ()
+       (interactive)
+       (progn 
+         ;;get rid of lines describing fact IDs
+         (save-excursion
+                  (flush-lines "#@"))
+         ;;for ANY LINE with tabs having two backslashes, just delete the two backslashes!
+         (save-excursion
+             (replace-string "\\" ""))
+         ;;ONLY WITHIN A RESOURCE:  replace an up-arrow (caret), replace it with the HTML escape codes "&#94;"
+         (save-excursion
+              (replace-regexp "\\(<[[:alnum:]_:.;#&!,'-/]+\\)\\(\\^\\)\\([[:alnum:]_:.;#&!,'-/]+>\\)" "\\1&#94;\\3"))
+         ;;for ANY LINE with a forward slash, replace it with the HTML escape codes "	&#47;"
+         (save-excursion
+             (replace-string "/" "&#47;"))
+         ;;ONLY WITHIN A RESOURCE:  replace an up-arrow (caret), replace it with the HTML escape codes "&#94;"
+         (save-excursion
+              (replace-regexp "\\(<[[:alnum:]_:.;#&!,'-/]+\\)\\(\\"\\)\\([[:alnum:]_:.;#&!,'-/]+>\\)" "\\1\\3"))))
+
+by marking the sexp and evaluating using M-X eval-region.
+
+Finally, I put back the prefix part:
+
+@base <http://yago-knowledge.org/resource/> .
+@prefix dbp: <http://dbpedia.org/ontology/> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+and any other slashed lines I want to retain.
+
+for code in yagoLiteralFacts.ttl, we need to NOT change the part ^^. So the fix-yago code needs to be changed
+so that the replacement for ^ only occurs inside a tag <...> and not elsewhere.
+
+So, we need a regexp search limited to tags and with a match group for ^ that replaces it with the HTML escape codes.
+
+#@ <id_igagss_1xk_1abgrgo>
+<Katherine_LaNasa>	<wasBornOnDate>	"1966-12-01"^^xsd:date .
+#@ <id_tzv7zr_1xk_dmh1gl>
+<Tirrel_Burton>	<wasBornOnDate>	"1930-##-##"^^xsd:date .
+#@ <id_1baw7m6_1xk_wx51y8>
+<Julian_Prochnow>	<wasBornOnDate>	"1986-07-01"^^xsd:date .
+
+(replace-regexp "\\(<[[:alnum:]_:.;#&!,'-/]+\\)\\(\\^\\)\\([[:alnum:]_:.;#&!,'-/]+>\\)" "\\1&#94;\\3")
+

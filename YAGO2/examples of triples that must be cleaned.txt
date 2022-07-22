@@ -1,0 +1,120 @@
+------
+TRIPLES THAT LEAD TO ERRORS
+------
+
+   --Those with curly brackets in the tag--
+
+In YagoTransitiveType:
+
+<Boysie_Oakes>	rdf:type	owl:Thing .
+<Christmas_Village,_Philadelphia>	rdf:type	<wikicategory_Amusement_parks_in_{{{location2}}}> .
+<Christmas_Village,_Philadelphia>	rdf:type	<wordnet_amusement_park_108494231> .
+...
+<Greg_Smith_(athlete)>	rdf:type	<wikicategory_Paralympic_wheelchair_rugby_players_of_Australia> .
+<Greg_Smith_(athlete)>	rdf:type	<wikicategory_People_from_Ballarat</text&#92;u003e&#92;n______<sha1_/&#92;u003e&#92;n____</revision&#92;u003e&#92;n__</page&#92;u003e&#92;n__<page&#92;u003e&#92;n____<title&#92;u003eRichelieu_rock</title&#92;u003e&#92;n____<ns&#92;u003e0</ns&#92;u003e&#92;n____<id&#92;u003e33236915</id&#92;u003e&#92;n____<redirect_title=Richelieu_Rock_/&#92;u003e&#92;n____<revision&#92;u003e&#92;n______<id&#92;u003e469673194</id&#92;u003e&#92;n______<timestamp&#92;u003e2012-01-05T07:25:12Z</timestamp&#92;u003e&#92;n______<contributor&#92;u003e&#92;n________<username&#92;u003eRjwilmsiBot</username&#92;u003e&#92;n________<id&#92;u003e10996774</id&#92;u003e&#92;n______</contributor&#92;u003e&#92;n______<minor_/&#92;u003e&#92;n______<comment&#92;u003eredirect_tagging_using_[[Project:AWB> .
+<Greg_Smith_(athlete)>	rdf:type	<wikicategory_Wheelchair_rugby_players_at_the_2008_Summer_Paralympics> .
+...
+<Tony_Dauksza>	rdf:type	<wikicategory_People_from_Grand_Rapids,_Michigan> .
+<Tony_Dauksza>	rdf:type	<wikicategory_Players_of_American_football_from_Michigan_State</text&#92;u003e&#92;n______<sha1&#92;u003eb9fuvxa0piyenn64yau6hurszwd99ge</sha1&#92;u003e&#92;n____</revision&#92;u003e&#92;n__</page&#92;u003e&#92;n__<page&#92;u003e&#92;n____<title&#92;u003eFile:Mipmap_illustration2.png</title&#92;u003e&#92;n____<ns&#92;u003e6</ns&#92;u003e&#92;n____<id&#92;u003e34605455</id&#92;u003e&#92;n____<revision&#92;u003e&#92;n______<id&#92;u003e475087608</id&#92;u003e&#92;n______<timestamp&#92;u003e2012-02-05T04:05:28Z</timestamp&#92;u003e&#92;n______<contributor&#92;u003e&#92;n________<username&#92;u003eFbot</username&#92;u003e&#92;n________<id&#92;u003e12162641</id&#92;u003e&#92;n______</contributor&#92;u003e&#92;n______<comment&#92;u003eBOT:_Flagging_file_as_possibly_eligible_for_[[WP:TRANSFER> .
+<Tony_Dauksza>	rdf:type	<wordnet_boatman_109861946> .
+...
+<Born_to_Be_Different>	rdf:type	<wikicategory_British_television_documentaries> .
+<Born_to_Be_Different>	rdf:type	<wikicategory_Documentary_films_about_children'''Bold_text'''</text&#92;u003e&#92;n______<sha1_/&#92;u003e&#92;n____</revision&#92;u003e&#92;n__</page&#92;u003e&#92;n__<page&#92;u003e&#92;n____<title&#92;u003eSociedad_de_Naciones</title&#92;u003e&#92;n____<ns&#92;u003e0</ns&#92;u003e&#92;n____<id&#92;u003e22656396</id&#92;u003e&#92;n____<redirect_title=League_of_Nations_/&#92;u003e&#92;n____<revision&#92;u003e&#92;n______<id&#92;u003e287504092</id&#92;u003e&#92;n______<timestamp&#92;u003e2009-05-02T19:53:01Z</timestamp&#92;u003e&#92;n______<contributor&#92;u003e&#92;n________<username&#92;u003eWhisperToMe</username&#92;u003e&#92;n________<id&#92;u003e15708</id&#92;u003e&#92;n______</contributor&#92;u003e&#92;n______<comment&#92;u003e[[WP:AES> .
+<Born_to_Be_Different>	rdf:type	<wordnet_abstraction_100002137> .
+...
+
+TO DO:
+
+In yagoGeonamesData:
+
+<Zīārat-e_Khalīfeh_<ollā_`Az̧īm>	<hasLatitude>	"33.27"^^<degrees> .
+...
+<Nágét_Ddh{30}l>	<hasLongitude>	"-134.37045"^^<degrees> . 
+...
+<Pis{21}w{21}min{21}w{14}tim_207>	<hasLatitude>	"54.71958"^^<degrees> . 
+
+
+------
+CLEANING
+------
+
+1. Kill tags and facts that have unicode codes within them such as ;u003 or that have a second left angle bracket. E.g., kill:
+
+<Greg_Smith_(athlete)>	rdf:type	<wikicategory_People_from_Ballarat</text&#92;u003e&#92;n______<sha1_/&#92;u003e&#92;n____</revision&#92;u003e&#92;n__</page&#92;u003e&#92;n__<page&#92;u003e&#92;n____<title&#92;u003eRichelieu_rock</title&#92;u003e&#92;n____<ns&#92;u003e0</ns&#92;u003e&#92;n____<id&#92;u003e33236915</id&#92;u003e&#92;n____<redirect_title=Richelieu_Rock_/&#92;u003e&#92;n____<revision&#92;u003e&#92;n______<id&#92;u003e469673194</id&#92;u003e&#92;n______<timestamp&#92;u003e2012-01-05T07:25:12Z</timestamp&#92;u003e&#92;n______<contributor&#92;u003e&#92;n________<username&#92;u003eRjwilmsiBot</username&#92;u003e&#92;n________<id&#92;u003e10996774</id&#92;u003e&#92;n______</contributor&#92;u003e&#92;n______<minor_/&#92;u003e&#92;n______<comment&#92;u003eredirect_tagging_using_[[Project:AWB> .
+
+2. Within a tag, strip out these characters:
+
+{ }
+
+for triples like:
+
+...
+<Boysie_Oakes>	rdf:type	owl:Thing .
+<Christmas_Village,_Philadelphia>	rdf:type	<wikicategory_Amusement_parks_in_{{{location2}}}> .
+<Christmas_Village,_Philadelphia>	rdf:type	<wordnet_amusement_park_108494231> .
+...
+
+3. Replace "m^2" with "m**2" for triples where literals contain the string:
+
+...
+<Wolfpack_(video_game)>	<happenedOnDate>	"1990-##-##"^^xsd:date .
+<Bout-du-Pont-de-Larn>	<hasArea>	"7630000.0"^^<m^2> .
+<Passiflora_arbelaezii>	<wasCreatedOnDate>	"1957-##-##"^^xsd:date .
+...
+
+4. Trim whitespace at end of tags (found in yagoSchema).
+
+...
+<happenedOnDate>	rdfs:subPropertyOf	<startedOnDate > .
+...
+
+5. Remove vertical bars in yagoGeonamesData:
+
+...
+<die_|_brueckenschlaeger>	<hasLatitude>	"52.54482"^^<degrees> .
+<die_|_brueckenschlaeger>	<hasLongitude>	"13.44266"^^<degrees> .
+<die_|_brueckenschlaeger>	rdfs:subClassOf	<geoclass_cave> .
+...
+<Sitio_do_Cano_Amarelo_|_Yellow_Pipe_Place>	<hasLatitude>	"41.14658"^^<degrees> .
+<Sitio_do_Cano_Amarelo_|_Yellow_Pipe_Place>	<hasLongitude>	"-8.59183"^^<degrees> .
+<Sitio_do_Cano_Amarelo_|_Yellow_Pipe_Place>	rdfs:subClassOf	<geoclass_garden> .
+<Sitio_do_Cano_Amarelo_|_Yellow_Pipe_Place>	<hasGeonamesEntityId>	"6698191" .
+
+...
+
+<Divino_Vino_|_Divino_Cibo>	<hasLatitude>	"40.77434"^^<degrees> .
+<Divino_Vino_|_Divino_Cibo>	<hasLongitude>	"-73.95395"^^<degrees> .
+<Divino_Vino_|_Divino_Cibo>	rdfs:subClassOf	<geoclass_restaurant> .
+<Divino_Vino_|_Divino_Cibo>	<hasGeonamesEntityId>	"7288895" .
+
+
+------
+EXAMPLES OF CLEANUP
+------
+
+# Remove double-quotes in tag
+Changed line 154: Was '<Peter_Pinne>	<created>	<In_Your_Arms_(Love_song_from_"Neighbours")> .'
+-->
+Now: '<Peter_Pinne>	<created>	<In_Your_Arms_(Love_song_from_Neighbours)> .'
+
+# Remove backquote in tag
+Changed line 167094: Was '<Sufyan_ibn_`Uyaynah>	<influences>	<Al-Shafi‘i> .'
+-->
+Now: '<Sufyan_ibn_Uyaynah>	<influences>	<Al-Shafi‘i> .'
+
+# Tag is so complex we can't figure it out
+Dropped line 2206451: '<Greg_Smith_(athlete)>	rdf:type
+<wikicategory_People_from_Ballarat</text\u003e\n______<sha1_/\u003e\n____</revision\u003e\n__</page\u003e\n__<page\u003e\n____<title\u003eRichelieu_rock</title\u003e\n____<ns\u003e0</ns\u003e\n____<id\u003e33236915</id\u003e\n____<redirect_title="Richelieu_Rock"_/\u003e\n____<revision\u003e\n______<id\u003e469673194</id\u003e\n______<timestamp\u003e2012-01-05T07:25:12Z</timestamp\u003e\n______<contributor\u003e\n________<username\u003eRjwilmsiBot</username\u003e\n________<id\u003e10996774</id\u003e\n______</contributor\u003e\n______<minor_/\u003e\n______<comment\u003eredirect_tagging_using_[[Project:AWB>
+. in file yagoTransitiveType.ttl. One or more tags cannot be cleaned.'
+
+Strategy:
+
+--For all <, >, {,  and } inside the tag replace them with underscores.
+
+--Replace all \u003e or other Unicode with an X.
+
+--Replace "m^2" with "m**2"
+
+
+
+

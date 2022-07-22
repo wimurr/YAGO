@@ -8,7 +8,7 @@
 :- style_check(-singleton).
 
 %  cd ~/Documents/Coding/Prolog/Semantic_Web/YAGO/YAGO1/
-connect :- cd('/users/umurrwi/Documents/Coding/Prolog/Semantic_Web/YAGO/YAGO1/').
+connect :- cd('/users/umurrwi/Documents/Coding/Prolog/Semantic_Web/YAGO/YAGO2/').
 
 :- use_module(library('semweb/rdf11')).              % use new RDF 1.1 spec, incorporates older rdf_db
 :- use_module(library('semweb/turtle')).              % to read in TTL triples
@@ -35,13 +35,110 @@ init_prefixes:-
         rdf_register_prefix(dbr,'http://dbpedia.org/page/',[force(true)]),
         rdf_register_prefix(dbp,'http://dbpedia.org/property/',[force(true)]),
         rdf_register_prefix(dbo,'http://dbpedia.org/ontology/',[force(true)]),
-        rdf_register_prefix(foaf, 'http://xmlns.com/foaf/0.1/').
+        rdf_register_prefix(foaf, 'http://xmlns.com/foaf/0.1/',[force(true)]),
+        rdf_register_prefix(owl, 'http://www.w3.org/2002/07/owl#',[force(true)]),
+        rdf_register_prefix(rdf,'http://www.w3.org/1999/02/22-rdf-syntax-ns#',[force(true)]),
+        rdf_register_prefix(rdfs,'http://www.w3.org/2000/01/rdf-schema#',[force(true)]),
+        rdf_register_prefix(skos,'http://www.w3.org/2004/02/skos/core#',[force(true)]),
+        rdf_register_prefix(xsd,'http://www.w3.org/2001/XMLSchema#',[force(true)]).
 
 :- init_prefixes,format("Prefixes initialized.~n").
 
-load_yago :-
-        rdf_load('/users/umurrwi/Documents/Projects/Ontologies/YAGO/YAGO1/yago-1.0.0-turtle/yago-1.0.0-turtle.ttl'),
-        format('COMPLETE version of YAGO 1 loaded and ready to query!~n').                  
+%----------------------------------
+%  Goal: Load Yago 2 -- with Different Options
+% ----------------------------------
+
+%----------------------------------
+% 1. First we need either the full or simple YAGO taxonomy.
+% 2. Then we add core YAGO, the key facts and labels.
+% 3. Geonames is optional.
+% 4. WN domains is optional.
+% 5. Wikipedia info is optional.
+% 6. Meta facts and multilingual info is optional.
+% ----------------------------------
+
+load_basic_yago :- load_yago([simple]).
+
+load_full_yago :- load_yago([full]).
+
+% Note: yagoGeonamesData is large: about 943 MB.
+load_core_yago :- fast_load_yago_files([yagoLabels,yagoFacts,yagoLiteralFacts,yagoSchema]).
+
+% Note: yagoGeonamesData is large: about 1.71 GB
+add_geo_yago :- fast_load_yago_files([yagoGeonamesData,yagoGeonamesGlosses,yagoGeonamesClasses]).
+
+add_wordnet_domains :- fast_load_yago_files([yagoWordnetIds,yagoWordnetDomains]).
+
+% Note: yagoWikipediaInfo is large: about 2.5 GB
+add_additional_useful_info :- fast_load_yago_files([yagoImportantTypes,yagoWikipediaInfo,yagoStatistics]).
+
+add_cheap_additional_useful_info :- fast_load_yago_files([yagoImportantTypes,yagoWordnetIds,yagoStatistics]).
+
+add_meta_facts :- fast_load_yago_files([yagoMetaFacts]).
+
+add_skippable_yago :- fast_load_yago_files([yagoMultilingualInstanceLabels,yagoDBPediaInstances,yagoDBPediaClasses,yagoMultilingualClassLabels,yagoGeonamesEntityIds,yagoGeonamesClassIds]).
+
+load_basic_yago_with_Wordnet :-
+        load_basic_yago,
+        load_core_yago,
+        add_wordnet_domains,
+        add_cheap_additional_useful_info.
+
+load_simple_taxonomy :- fast_load_yago_files(['yagoSimpleTypes','yagoSimpleTaxonomy']).
+
+load_full_taxonomy :- fast_load_yago_files(['yagoTypes','yagoTaxonomy']).
+
+% set up more convenient abbreviations.
+:- assertz(file_search_path(yago,'/users/umurrwi/Documents/Projects/Ontologies/YAGO/YAGO2/yago2s_ttl-1.7z')).
+
+% load_yago can take a list of flags in Options:
+%    simple - just loads the simple YAGO types and taxonomy
+%    full - loads the more complex YAGO types and taxonomy
+
+load_yago(Options) :-
+        (   memberchk(simple,Options)
+        ->  load_simple_taxonomy
+        ; memberchk(full,Options) -> load_full_taxonomy
+        ; print('Please add one of these two flags, simple or full to the options list')
+        ),
+        format('COMPLETE version of YAGO 2 loaded and ready to query!~n').                  
+
+% load_yago_files(+Files) is a convenience predicate to load Yago TTL files given their short names, without extensions.
+% A full file name looks like this: '/Users/umurrwi/Documents/Projects/Ontologies/YAGO/YAGO2/yago2s_ttl-1.7z/cleaned_yagoTaxonomy'
+load_yago_files([File|Files]) :-
+        format("Loading Yago file ~w.~n",[File]),
+        file_search_path(yago,Yago_Dir),
+        atomic_list_concat([Yago_Dir,'/','cleaned_',File,'.ttl'],File_Path),
+        rdf_load(File_Path),
+        load_yago_files(Files).
+
+load_yago_files([]) :- format("Done.~n").
+
+% declare the number of cores to use for fast_load_yago_files to be 8.
+number_of_cores(Cores) :-
+        Cores is 8.
+
+% fast_load_yago_files(+Files) is a convenience predicate to load Yago TTL files given their short names, without extensions.
+% A full file name looks like this: '/Users/umurrwi/Documents/Projects/Ontologies/YAGO/YAGO2/yago2s_ttl-1.7z/cleaned_yagoTaxonomy'
+% Unlike load_yago_files, this predicate attempts to use concurrency in rdf_load by giving it a list of files and directing it to use
+% all cores available. To do this, it first expands file names with expand_yago_filenames.
+fast_load_yago_files(Files) :-
+        length(Files,N),
+        format("Loading ~d Yago files ~w.~n",[N,Files]),
+        file_search_path(yago,Yago_Dir),
+        expand_file_search_paths(Yago_Dir,Files,Expanded_File_Names),
+        number_of_cores(N_Cores),
+        rdf_load(Expanded_File_Names,[concurrent(N_Cores)]),
+        format("Finished loading ~d Yago files ~w!~n",[N,Files]).        
+
+% expand_file_search_paths(+Yago_Dir,+Files,-Filepaths) expands Yago file name such
+% as yagoSchema to full file paths for the cleaned versions, such as:
+% /Users/umurrwi/Documents/Projects/Ontologies/YAGO/YAGO2/yago2s_ttl-1.7z/cleaned_yagoSchema'
+expand_file_search_paths(Yago_Dir,[File|Files],[Filepath|Expanded_File_Names]) :-
+        atomic_list_concat([Yago_Dir,'/','cleaned_',File,'.ttl'],Filepath),
+        expand_file_search_paths(Yago_Dir,Files,Expanded_File_Names).
+
+expand_file_search_paths(Yago_Dir,[],[]).
 
 % Examples of Queries
 
@@ -165,4 +262,4 @@ warm_specific :-
 
 :- [demo,queries].
 
-:- write('Loaded YAGO code. To load the full YAGO 1 ontology, call load_yago.'),nl.
+:- write('Loaded YAGO code. To load the full YAGO 2 ontology, call load_yago.'),nl.

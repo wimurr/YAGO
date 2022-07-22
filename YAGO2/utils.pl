@@ -47,6 +47,32 @@ repeat_indent(N) :-
 
 /*
 
+                   TYPE CONVERSION
+
+*/  
+
+
+% ensure_is_number(+In,-Out) is det
+% converts In to a number if possible,
+% if it is not one already.
+ensure_is_number(N,N) :-
+        number(N),
+        !.
+
+ensure_is_number(N,Out) :-
+        string(N),
+        number_string(Out,N),
+        !.
+
+ensure_is_number(N,Out) :-
+        atom(N),
+        atom_number(N,Out),
+        !.
+
+ensure_is_number(N,N) :- fail.
+
+/*
+
                    LIST MANIPULATION
 
 */  

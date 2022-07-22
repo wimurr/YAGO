@@ -82,7 +82,7 @@ get_all_relevant_facts_for_name(+Name,-Facts) is semidet
 print_all_relevant_facts_for_name(+Name) is semidet   
 
 ----------------------------------
-  Goal: to Map from a Name to a Resource
+  Goal: Map from a Name to a Resource
 ----------------------------------
 
 --NOTES ON AMBIGUITY--
@@ -93,7 +93,13 @@ usually culturally preferred mappings so we can just use:
 best_name_for_resource(+Name,-Resource)
    
    For common nouns, however, such as 'car' there is much more ambiguity.
+
 The following tools may be useful:
+
+any_resource_with_name(+Name,-Resource)
+
+   returns all resources with name, one by one, which may be useful for WordNet words
+with multiple senses.
 
 page_ranked_resources(Name)
 
@@ -115,7 +121,7 @@ true.
 
 We can also see ALL resources matching names:
 
-   ?- any_resource_labeling_name('Denver',X).
+   ?- any_resource_with_name('Denver',X).
    X = yago:'Denver,_Colorado' ;
    X = yago:'Denver,_Pennsylvania' ;
    X = yago:'Denver,_Indiana' .
@@ -153,7 +159,7 @@ likely best match for the name.
 In summary, there are TWO KEY WAYS of going from a name to the
 resource that most likely represents it:
 
-   any_resource_for_name(+Name,-Resource) is nondet
+   any_resource_with_name(+Name,-Resource) is nondet
 
 or
 
@@ -176,13 +182,12 @@ separate functions.
    Implementation of Mapping from Name to Best Resource Match
 
 best_resource_for_name(+Name,-Resource) calls best_resources_for_name(+Name,-Resource),
-which in turn calls any_resource_for_name(+Name,-Resource) until all possible matches are found,
+which in turn calls any_resource_with_name(+Name,-Resource) until all possible matches are found,
 and then sorts those resources by "page rank" (the number of facts found in the YAGO kb).
 
 ----------------------------------
      Goal: Get all Facts for a Name
 ----------------------------------
-
 
 ----------------------------------
 
@@ -276,13 +281,13 @@ as the proper syntax for a literal match is literal(?Query,-Match).
 
 get_all_rdf_stats :-
        rdf_statistics(triples(N)),
-       format("YAGO 1 has ~d triples in it.~n",[N]),
+       format("YAGO 2 has ~d triples in it.~n",[N]),
        rdf_statistics(resources(R)),
-       format("YAGO 1 has ~d resources in it.~n",[R]),
+       format("YAGO 2 has ~d resources in it.~n",[R]),
        rdf_statistics(properties(P)),
-       format("YAGO 1 has ~d properties in it.~n",[P]),
+       format("YAGO 2 has ~d properties in it.~n",[P]),
        rdf_statistics(literals(L)),
-       format("YAGO 1 has ~d literals in it.~n",[L]).
+       format("YAGO 2 has ~d literals in it.~n",[L]).
 
 get_all_triples_for_name(Name) :- best_show_triples_best_first(Name).
 
@@ -403,14 +408,19 @@ show_unique_objects :-
 best_name_for_resource(Resource,Name) :-
         prefer_name_to_resource(Name,Resource),!.
 
+% Is there a yago:'isPreferredMeaningOf' connecting the name to a resource?
+best_name_for_resource(Resource,Name) :-
+        rdf(Resource,yago:'isPreferredMeaningOf',Name), !.
+
+% Is there a skos:'prefLabel' connecting the name to a resource?
 best_name_for_resource(Resource,Name) :-
         rdf(Resource,skos:'prefLabel',Name), !.
 
 best_name_for_resource(Resource,Name) :-
-        rdf(Resource,rdfs:'label',Name^^xsd:string), !.
+        rdf(Resource,rdfs:'label',Name@eng), !.
 
 best_name_for_resource(Resource,Name) :-
-        rdf(Resource,rdfs:'label',Name@en), !.
+        rdf(Resource,rdfs:'label',Name^^xsd:string), !.
 
 best_name_for_resource(Resource,Name) :-
         rdf(Resource,rdfs:'label',Name@Lang), !.
@@ -439,7 +449,7 @@ best_resource_for_name(Name,Resource):-
 best_resource_for_name(Name,Resource):-
         best_concept_only_for_name(Name,Resource).
 
-% any_resource_labeling_name(+Name,-Resource) is nondet
+% any_resource_with_name(+Name,-Resource) is nondet
 
 % Find all resources with the given Name as their label.
 %
@@ -453,19 +463,30 @@ best_resource_for_name(Name,Resource):-
 %         rdf(Concept,rdfs:'label',literal(substring(Name),Match)).
 % Match binds with what was matched.
 
-any_resource_labeling_name(Name,Resource) :-
-        atom(Name),
-        atom_string(Name,Name_as_string),
-        rdf(Resource,rdfs:'label',Name_as_string^^xsd:string).
+any_resource_with_name(Name,Resource) :-
+        prefer_name_to_resource(Name,Resource).
 
-any_resource_labeling_name(Name,Resource) :-
-        string(Name),
+% Is there a yago:'isPreferredMeaningOf' connecting the name to a resource?
+any_resource_with_name(Name,Resource) :-
+        rdf(Resource,yago:'isPreferredMeaningOf',Name).
+
+% Is there a skos:'prefLabel' connecting the name to a resource?
+any_resource_with_name(Name,Resource) :-
+        rdf(Resource,skos:'prefLabel',Name).
+
+any_resource_with_name(Name,Resource) :-
+        rdf(Resource,rdfs:'label',Name@eng).
+
+any_resource_with_name(Name,Resource) :-
         rdf(Resource,rdfs:'label',Name^^xsd:string).
+
+any_resource_with_name(Name,Resource) :-
+        rdf(Resource,rdfs:'label',Name@Lang).
 
 % all_resources_for_name(+Name,-Resources) is det
 % finds a bag of all unique possible resources for a name (e.g., there are several "Bill Murray" resources).
 all_resources_for_name(Name,Resources) :-
-        setof(Resource,any_resource_labeling_name(Name,Resource),Resources).
+        setof(Resource,any_resource_with_name(Name,Resource),Resources).
 
 % resource_w_most_facts_for_name(+Name,-Resources) is multi
 % Use preferences and page rank heuristics to offer up the resource for a name.
@@ -500,7 +521,7 @@ That is the slowest approach. Use name_of_resource_via_page_rank/2 for that.
 
 /*
 
-NOTE: YAGO 1 has neither 
+NOTE: YAGO 2 has neither 
 
 * skos:'prefLabel' 
 
@@ -1349,25 +1370,41 @@ born_on(Name,Date_String) :-
 
 /*
 
-Find persons who were born between years X and Y.
+Find persons who were born between years X and Y, (e.g., 1970 and 1990),
+given as numbers. After the first year and before the second starts.
 
 Acts as a generator to generate all people in that range.
 
 any_born_between(-Person, +X, +Y)
 
-*/
-
-any_person_born_between(Person, X,Y) :-
-        rdf(Person,yago:'wasBornOnDate',date(Y,M,D)),
         split_string(Date_String,'-','',[Year,Month,Day]), % Date_String is, e.g., '1979-01-15'
         number_string(Year_Number,Year),
-        Year_Number >= X,
-        Year_Number =< Y,
-        best_resource_for_name(Name,Person),
-        write(Name),
-        write(' was born: '),
-        write(Date_String),
-        nl.
+
+*/
+
+any_person_born_between(Person, Year1,Year2) :-
+        rdf(Person,yago:'wasBornOnDate',date(Y,M,D)^^xsd:date),
+        Y >= Year1,
+        Y < Year2.
+
+show_any_person_born_between(Year1,Year2) :-
+        rdf(Person,yago:'wasBornOnDate',date(Y,M,D)^^xsd:date),
+        Y >= Year1,
+        Y < Year2,
+        best_name_for_resource(Person,Name),
+        format("~w was born on ~d-~d-~d.~n",[Name,M,D,Y]).
+
+string_to_show_any_person_born_between(Year1,Year2,Output) :-
+        rdf(Person,yago:'wasBornOnDate',date(Y,M,D)^^xsd:date),
+        Y >= Year1,
+        Y < Year2,
+        best_name_for_resource(Person,Name),
+        with_output_to(string(Output),
+                       format("~w was born on ~d-~d-~d.~n",[Name,M,D,Y])).
+
+show_all_people_born_between(Year1,Year2) :-
+        findall(Output,string_to_show_any_person_born_between(Year1,Year2,Output),Outputs),
+        print_all(Outputs).
 
 /*
 
@@ -1430,11 +1467,22 @@ isa(Resource,NameOfType) searches for resources that have
 a WordNet type with the name given. The name of the resource
 is not given here, unlike in find_X_isa_Y.
 
+e.g., isa('cat',X) returns all resources of that type, one at a time.
+
 */
 
-isa(Resource,NameOfType) :-
-        name_to_resource(NameOfType,WN_resource),
+isa(NameOfType,Resource) :-
+        any_resource_with_name(NameOfType,WN_resource),
         rdf(Resource,rdf:'type',WN_resource).
+
+% all_examples returns all resources found of a type.
+all_examples(NameOfType,Resources) :-
+        findall(Resource,isa(NameOfType,Resource),Resources).
+
+show_all_examples(NameOfType) :-
+        all_examples(NameOfType,Resources),
+        format("~nAll examples of type '~w' found:~n",[NameOfType]),
+        print_all(Resources).
 
 /* whereIs looks up the location for a place given its name. It
 may succeed more than once if there are multiple places with that
@@ -1446,10 +1494,20 @@ name.
 
 */
 
-where_is(Name,Lat,Long) :-
-        rdf(GeoEntity,rdfs:'label',literal(lang(eng,Name))),
-        rdf(GeoEntity,yago:'hasLatitude',literal(type(yago:'degrees',Lat))),
-        rdf(GeoEntity,yago:'hasLongitude',literal(type(yago:'degrees',Long))).
+say_where_is(Name) :-
+        (   where_is(Name,Lat,Long) ->  format("~n~w is at ~2f degrees latitude, ~2f degrees longitude.~n",[Name,Lat,Long])
+        ;   format("~nI don't know where ~w is.~n",[Name])
+        ).
+
+% where_is(+Name,-Lat_Out,-Long_Out)
+% finds lat, long for Name, if it can be identified,
+% and returns these as numbers.
+where_is(Name,Lat_Out,Long_Out) :-
+        best_resource_for_name(Name,GeoEntity),
+        rdf(GeoEntity,yago:'hasLatitude',Lat^^yago:'degrees'),
+        ensure_is_number(Lat,Lat_Out),
+        rdf(GeoEntity,yago:'hasLongitude',Long^^yago:'degrees'),
+        ensure_is_number(Long,Long_Out).
 
 /* Saved for YAGO 2 and beyond, where we have lat / long info
 
@@ -1503,8 +1561,10 @@ Y = yago:actedIn.
 
 % find dates connected to this name:
 
-dates(Name,Predicate,Date) :- rdf(Concept,rdfs:'label',literal(exact(Name),_)),
-                              rdf(Concept,Predicate,literal(type(xsd:'date', Date))).
+dates(Name,Predicate,Date) :-
+        rdf(Concept,rdfs:'label',literal(exact(Name),_)),
+        rdf(Concept,Predicate,literal(type(xsd:'date', Date))).
+
 % find WordNet types for a name or label
 wordnet(Name,WN_type) :- rdf(Concept,rdfs:'label',literal(exact(Name),_)),
                          rdf(Concept,rdf:'type',Class),
