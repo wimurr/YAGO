@@ -36,6 +36,156 @@ The second version of YAGO has all of the above, but further:
 <Elvis_Presley>	rdfs:label	"Elivs"@eng .
 <Elvis_Presley>	rdfs:label	"Elvis Pressly"@eng .
 
+• With GeoNames loaded, a place name resource will have latitude, longitude, and be
+a rdfs:subClassOf some GeoNames class.
+
+<United_States>	<hasLatitude>	"39.76"^^<degrees> .
+<United_States>	<hasLongitude>	"-98.5"^^<degrees> .
+<United_States>	rdfs:subClassOf	<geoclass_independent_political_entity> .
+<United_States>	<hasGeonamesEntityId>	"6252001" .
+<United_States>	rdfs:label	"ABD" .
+<United_States>	rdfs:label	"Ameerika UEhendriigid" .
+<United_States>	rdfs:label	"Ameerika Ühendriigid" .
+<United_States>	rdfs:label	"America" .
+<United_States>	rdfs:label	"Amerihka Ovttastuvvan Stahtat" .
+<United_States>	rdfs:label	"Amerihká Ovttastuvvan Stáhtat" .
+<United_States>	rdfs:label	"Amerika" .
+<United_States>	rdfs:label	"Amerika Birlesik Devletleri" .
+<United_States>	rdfs:label	"Amerika Birleşik Devletleri" .
+<United_States>	rdfs:label	"Amerika Birləşmiş Ştatları" .
+<United_States>	rdfs:label	"Amerika Serikat" .
+<United_States>	rdfs:label	"Amerika Syarikat" .
+<United_States>	rdfs:label	"Amerikas Foerenta Stater" .
+<United_States>	rdfs:label	"Amerikas Forenede Stater" .
+<United_States>	rdfs:label	"Amerikas Förenta Stater" .
+<United_States>	rdfs:label	"Amerikas Savienotas Valstis" .
+<United_States>	rdfs:label	"Amerikas Savienotās Valstis" .
+<United_States>	rdfs:label	"Ameriketako Estatu Batuak" .
+<United_States>	rdfs:label	"Amerikijn Nehgdsehn Uls" .
+<United_States>	rdfs:label	"Bandariki Nordur-Ameriku" .
+<United_States>	rdfs:label	"Bandarikin" .
+<United_States>	rdfs:label	"Bandaríki Norður-Ameríku" .
+<United_States>	rdfs:label	"Bandaríkin" .
+<United_States>	rdfs:label	"Egyesuelt Allamok" .
+<United_States>	rdfs:label	"Egyesült Államok" .
+<United_States>	rdfs:label	"Enomenes Politeies" .
+<United_States>	rdfs:label	"Estados Unidos" .
+<United_States>	rdfs:label	"Estados Unidos de America" .
+<United_States>	rdfs:label	"Estados Unidos de América" .
+<United_States>	rdfs:label	"Estats Units" .
+<United_States>	rdfs:label	"Estatu Batuak" .
+<United_States>	rdfs:label	"Etats-Unis" .
+<United_States>	rdfs:label	"Etazini" .
+<United_States>	rdfs:label	"Etazíni" .
+<United_States>	rdfs:label	"Hoa Ky" .
+<United_States>	rdfs:label	"Hoa Kỳ" .
+<United_States>	rdfs:label	"Jungtines Amerikos Valstijos" .
+<United_States>	rdfs:label	"Jungtines Valstijos US" .
+<United_States>	rdfs:label	"Jungtinės Amerikos Valstijos" .
+<United_States>	rdfs:label	"Jungtinės Valstijos US" .
+<United_States>	rdfs:label	"Muungano wa Nchi za Amerika" .
+<United_States>	rdfs:label	"Obedineti Drzhavi" .
+<United_States>	rdfs:label	"Pule'anga fakataha 'Amelika" .
+<United_States>	rdfs:label	"Puleʻanga fakataha ʻAmelika" .
+<United_States>	rdfs:label	"Qaramada Midoobey ee Maraykanka" .
+<United_States>	rdfs:label	"SASHH" .
+<United_States>	rdfs:label	"SSHA" .
+<United_States>	rdfs:label	"Sambandsriki Amerika" .
+<United_States>	rdfs:label	"Sambandsríki Amerika" .
+<United_States>	rdfs:label	"Shtetet e Bashkuara te Amerikes" .
+<United_States>	rdfs:label	"Shtetet e Bashkuara të Amerikës" .
+<United_States>	rdfs:label	"Sjedinene Americke Drzave" .
+<United_States>	rdfs:label	"Sjedinene Drzave" .
+<United_States>	rdfs:label	"Sjedinjene Drzave" .
+<United_States>	rdfs:label	"Sjedinjene Države" .
+<United_States>	rdfs:label	"Soedinennye Shtaty" .
+<United_States>	rdfs:label	"Spojene staty" .
+<United_States>	rdfs:label	"Spojene staty americke" .
+<United_States>	rdfs:label	"Spojené státy" .
+<United_States>	rdfs:label	"Spojené státy americké" .
+<United_States>	rdfs:label	"Spojené štáty" .
+<United_States>	rdfs:label	"Spojené štáty americké" .
+<United_States>	rdfs:label	"Spoluceni Stati Ameriki" .
+<United_States>	rdfs:label	"Stait Aontaithe Mheiricea" .
+<United_States>	rdfs:label	"Stany Zjednoczone" .
+<United_States>	rdfs:label	"Statele Unite" .
+<United_States>	rdfs:label	"Statele Unite ale Americii" .
+<United_States>	rdfs:label	"Stati Uniti" .
+<United_States>	rdfs:label	"Statos Unite" .
+<United_States>	rdfs:label	"Stáit Aontaithe Mheiriceá" .
+<United_States>	rdfs:label	"Suedineni shhati" .
+<United_States>	rdfs:label	"US" .
+<United_States>	rdfs:label	"USA" .
+<United_States>	rdfs:label	"United States" .
+<United_States>	rdfs:label	"United States of America" .
+<United_States>	rdfs:label	"Usono" .
+<United_States>	rdfs:label	"Vereinigte Staaten" .
+<United_States>	rdfs:label	"Verenigde State van Amerika" .
+<United_States>	rdfs:label	"Verenigde Staten" .
+<United_States>	rdfs:label	"Yhdysvallat" .
+<United_States>	rdfs:label	"Yr Unol Daleithiau" .
+<United_States>	rdfs:label	"ZDA" .
+<United_States>	rdfs:label	"Zdruzene drzave Amerike" .
+<United_States>	rdfs:label	"Združene države Amerike" .
+<United_States>	rdfs:label	"Zlucanya Staty Ameryki" .
+<United_States>	rdfs:label	"Zluchanyja Shtaty" .
+<United_States>	rdfs:label	"aikkiya amerikka kutiyaracu" .
+<United_States>	rdfs:label	"aikya rastra amerika" .
+<United_States>	rdfs:label	"alawlayat almthdt alamrykyt" .
+<United_States>	rdfs:label	"alwlayat almthdt alamrykyt" .
+<United_States>	rdfs:label	"amerika he zhong guo" .
+<United_States>	rdfs:label	"ayalat mthdh" .
+<United_States>	rdfs:label	"ayalat mthdh amryka" .
+<United_States>	rdfs:label	"markina yuktarastra" .
+<United_States>	rdfs:label	"mei guo" .
+<United_States>	rdfs:label	"migug" .
+<United_States>	rdfs:label	"sanyukata rajya amerika" .
+<United_States>	rdfs:label	"sanyukta rajya amarika" .
+<United_States>	rdfs:label	"sanyukta rajya amerika" .
+<United_States>	rdfs:label	"shrathxmerika" .
+<United_States>	rdfs:label	"yunairrad srrerrs oph amerikka" .
+<United_States>	rdfs:label	"États-Unis" .
+<United_States>	rdfs:label	"Ηνωμένες Πολιτείες" .
+<United_States>	rdfs:label	"Америкийн Нэгдсэн Улс" .
+<United_States>	rdfs:label	"Злучаныя Штаты" .
+<United_States>	rdfs:label	"Злучаныя Штаты Амерыкі" .
+<United_States>	rdfs:label	"Обединети Држави" .
+<United_States>	rdfs:label	"САЩ" .
+<United_States>	rdfs:label	"США" .
+<United_States>	rdfs:label	"Соединенные Штаты" .
+<United_States>	rdfs:label	"Сполучені Штати Америки" .
+<United_States>	rdfs:label	"Съединени щати" .
+<United_States>	rdfs:label	"Сједињене Америчке Државе" .
+<United_States>	rdfs:label	"Сједињене Државе" .
+<United_States>	rdfs:label	"Қўшма Штатлар" .
+<United_States>	rdfs:label	"Ամէրիկայի Միացյալ Նահանգնէր" .
+<United_States>	rdfs:label	"Միացյալ Նահանգներ" .
+<United_States>	rdfs:label	"ארצות הברית" .
+<United_States>	rdfs:label	"الاولايات المتحدة الامريكية" .
+<United_States>	rdfs:label	"الولايات المتحدة الأمريكية" .
+<United_States>	rdfs:label	"ایالات متحده" .
+<United_States>	rdfs:label	"ایالات متحدهٔ امریکا" .
+<United_States>	rdfs:label	"ریاست ہائے متحدہ امریکا" .
+<United_States>	rdfs:label	"संयुक्त राज्य अमरिका" .
+<United_States>	rdfs:label	"संयुक्त राज्य अमेरिका" .
+<United_States>	rdfs:label	"মার্কিন যুক্তরাষ্ট্র" .
+<United_States>	rdfs:label	"સંયુકત રાજ્ય અમેરિકા" .
+<United_States>	rdfs:label	"ஐக்கிய அமெரிக்கா குடியரசு" .
+<United_States>	rdfs:label	"ఐక్య రాష్ట్ర అమెరిక" .
+<United_States>	rdfs:label	"യുണൈറ്റഡ് സ്റ്റേറ്റ്സ് ഓഫ് അമേരിക്ക" .
+<United_States>	rdfs:label	"สหรัฐอเมริกา" .
+<United_States>	rdfs:label	"ສະຫະລັດອາເມລິກາ" .
+<United_States>	rdfs:label	"ཡུ་ནའིཊེཊ་སི་ཊེསི" .
+<United_States>	rdfs:label	"ཨ་རི་ཆིག་སྒྲིལ་རྒྱལ་ཁབ།" .
+<United_States>	rdfs:label	"ამერიკის შეერთებული შტატები" .
+<United_States>	rdfs:label	"አሜሪካ" .
+<United_States>	rdfs:label	"សហរដ្ឋអាមេរិក" .
+<United_States>	rdfs:label	"アメリカ合衆国" .
+<United_States>	rdfs:label	"美国" .
+<United_States>	rdfs:label	"ꂰꇩ" .
+<United_States>	rdfs:label	"미국" .
+
+
 The full load for:
 
         load_basic_yago,

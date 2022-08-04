@@ -410,7 +410,14 @@ best_name_for_resource(Resource,Name) :-
 
 % Is there a yago:'isPreferredMeaningOf' connecting the name to a resource?
 best_name_for_resource(Resource,Name) :-
+        rdf(Resource,yago:'isPreferredMeaningOf',Name@eng), !.
+
+best_name_for_resource(Resource,Name) :-
         rdf(Resource,yago:'isPreferredMeaningOf',Name), !.
+
+% Is there a skos:'prefLabel' connecting the name to a resource?
+best_name_for_resource(Resource,Name) :-
+        rdf(Resource,skos:'prefLabel',Name@eng), !.
 
 % Is there a skos:'prefLabel' connecting the name to a resource?
 best_name_for_resource(Resource,Name) :-
@@ -988,6 +995,11 @@ show_fact_part(Resource) :-
         pretty_print_for(Short_Prefixed_Name,BestName),
         write(BestName),!.
 
+show_fact_part(Compound):-
+        not(atom(Compound)),
+        pretty_print_for(Short_Prefixed_Name,BestName),
+        write(BestName),!.
+
 % Handle literals
 % show_fact_part(Name) :-
 %pre        print(Name),!. % I use print rather than write as it uses registered RDF prefixes in the output.
@@ -1182,6 +1194,15 @@ much longer terms commented out above. Instead we are going to first convert the
 the shorter form, and then call pretty_print_for, so we can enter the translations more clearly.
 */
 
+% names, e.g., 'Bill Murray'@eng --> 'Bill Murray'
+%  pulls out the English label, if provided.
+% ?- 'Bill Murray'@eng =.. [@,Name,eng].
+%      Name = 'Bill Murray'.
+pretty_print_for(Name_At_Lang,Pretty_Name) :-
+        not(atom(Name_At_Lang)),
+        Name_At_Lang  =..  [@, Pretty_Name, eng].
+
+% relations
 pretty_print_for(rdf:'type','is a').
 pretty_print_for(yago:'isDescribedBy','is described by the Wikipedia page at').
 pretty_print_for(yago:'hasWonPrize','has won the prize').
@@ -1246,79 +1267,73 @@ pretty_print_for('http://yago-knowledge.org/resource/hasAcademicAdvisor','had as
 ==============================================================================
 */
 
-% find_all_parents(+Resource,-Parents) finds all the parents in the Yago taxonomy above the resource.
+% find_all_parents(+Resource,-Parents,-Links) finds all the parents in the Yago taxonomy above the resource, along
+% with links in the subgraph. Both the parents and links are returned.
+% Example: show_all_parents(yago:'Bill_Murray').
 
-:- rdf_meta find_all_parents(r,-).
+:- rdf_meta find_all_parents(r,-,-).
 
-find_all_parents(Resource,All_Parents) :-
-        find_new_parents_layer_by_layer([Resource],1,[Resource],All_Parents),
-        print_all(All_Parents).
+find_all_parents(Resource,All_Parents,All_Links) :-
+        find_new_parents_layer_by_layer([Resource],1,[Resource],[],All_Parents,All_Links),
+        !.
+
+% show_all_parents(+Resource) finds all the parents in the Yago taxonomy above the resource, along
+% with links in the subgraph. Both the parents and links are printed.
+% Example: show_all_parents(yago:'Abraham_Lincoln').
+
+:- rdf_meta show_all_parents(r).
+
+show_all_parents(Resource) :-
+        find_new_parents_layer_by_layer([Resource],1,[Resource],[],All_Parents,All_Links),
+        format("~nNodes, starting at '~w' and searching upwards:~n",[Resource]),
+        print_all(All_Parents),
+        format("~nLinks, starting at '~w' and searching upwards:~n",[Resource]),
+        print_all(All_Links),
+        !.
 
 % find_new_parents_layer_by_layer(+Current_Layer,+Distance,+Visited,-Parents) 
 % is a helper function to find all the parents in the Yago taxonomy above a resource.
+% find_new_parents_layer_by_layer([yago:'Bill_Murray'],1,[yago:'Bill_Murray'],[],X,Y),print_all(Y).
 
-:- rdf_meta find_new_parents_layer_by_layer(t,+,t,-).
+:- rdf_meta find_new_parents_layer_by_layer(t,+,t,t,-,-).
 
-find_new_parents_layer_by_layer(Current_Layer,Distance,Visited,All_Ancestors_Everywhere) :-
+find_new_parents_layer_by_layer(Current_Layer,Distance,Nodes_Visited,Links_Visited,All_Ancestors_Everywhere,All_Links_In_Subgraph) :-
         % first find new parents by expanding the current layer
-        find_immediate_higher_level_parents(Current_Layer,Visited,All_New_Parents),
-        forall(member(New_Parent,All_New_Parents),note_new_parent(New_Parent,Distance)),
-        length(All_New_Parents,N),
-        continuation(N,Distance,Visited,All_New_Parents,All_Ancestors_Everywhere).
-
-:- rdf_meta continuation(+,+,t,t,-).
-
-% continuation(+N,+Distance,+Visited,+All_New_Parents,-All_Ancestors_Everywhere) is det
-
-continuation(0,Distance,Visited,All_New_Parents,All_Ancestors_Everywhere) :-
-        All_Ancestors_Everywhere = All_New_Parents,
-        !.
-
-continuation(N,Distance,Visited,All_New_Parents,All_Ancestors_Everywhere) :-
+        find_immediate_higher_level_parents(Current_Layer,Nodes_Visited,Links_Visited,All_New_Parents,All_New_Links),
+        subtract(All_New_Parents,Nodes_Visited,Unique_New_Parents),
+        forall(member(New_Parent,Unique_New_Parents),note_new_parent(New_Parent,Distance)),
+        % then continue if we found another layer of parents, otherwise return what we have found so far
+        (    Unique_New_Parents = []
+        -> All_Ancestors_Everywhere = Nodes_Visited, All_Links_In_Subgraph = All_New_Links, !
+        ;   
         New_Distance is Distance + 1,
-        append(Visited,All_New_Parents,Updated_Visited),
-        find_new_parents_layer_by_layer(All_New_Parents,New_Distance,Updated_Visited,Next_Layer_New_Parents),
-        append(All_New_Parents,Next_Layer_New_Parents,All_Ancestors_Everywhere),
-        !.
-
-:- rdf_meta find_new_parent(r,t,r).
-
-% find_new_parent finds a next layer parent for Resource.
-% find_new_parent(+Resource,+Visited,-New_Parent) is multi
-% We assume Resource is part of Visited, along with other previously seen parents.
-
-find_new_parent(Resource,Visited,New_Parent) :-
-        rdf(Resource,rdf:'type',New_Parent),
-        not(memberchk(New_Parent,Visited)).
-
-find_new_parent(Resource,Visited,New_Parent) :-
-        rdf(Resource,rdfs:'subClassOf',New_Parent),
-        not(memberchk(New_Parent,Visited)).
-
-% find_new_parents_for_resource(+Resource,+Visited,-New_Parents) is det
-% Simply finds all new immediate parents of the Resource that are
-% not in Visited.
-
-:- rdf_meta find_new_parents_for_resource(r,t,-).
-
-find_new_parents_for_resource(Resource,Visited,New_Parents) :-
-        findall(New_Parent,find_new_parent(Resource,Visited,New_Parent),New_Parents).
+        find_new_parents_layer_by_layer(Unique_New_Parents,New_Distance,All_New_Parents,All_New_Links,All_Ancestors_Everywhere,All_Links_In_Subgraph), !
+        ).
 
 % find_immediate_higher_level_parents(+Resources,+Visited,-New_Parents) is det.
 % finds all parents of the Resources given -- typically the last layer of parents
 % found.
+% find_immediate_higher_level_parents([yago:'Bill_Murray'],[yago:'Bill_Murray'],[],X,Y),print_all(Y).
 
-:- rdf_meta find_immediate_higher_level_parents(t,t,-).
+:- rdf_meta find_immediate_higher_level_parents(t,t,t,-,-).
 
-find_immediate_higher_level_parents([Resource|Rest],Visited,All_New_Parents) :-
+find_immediate_higher_level_parents([Resource|Rest],Nodes_Visited,Links_Visited,All_New_Parents,All_New_Links) :-
         % find parents for the first resource...
-        find_new_parents_for_resource(Resource,Visited,Some_New_Parents),
-        append(Visited,Some_New_Parents,Updated_All_Visited),
-        % then find parents for the remaining resources.
-        find_immediate_higher_level_parents(Rest,Updated_All_Visited,Other_New_Parents),
-        append(Some_New_Parents,Other_New_Parents,All_New_Parents).
+        (   find_new_parents_for_resource(Resource,Nodes_Visited,Links_Visited,New_Parents1,New_Links1)
+            -> 
+            find_immediate_higher_level_parents(Rest,Nodes_Visited,Links_Visited,New_Parents2,New_Links2),
+            % join all new parents into one var and all new links into another var
+            append([Nodes_Visited,New_Parents1,New_Parents2],Bag_Of_All_New_Parents),
+            append([Links_Visited,New_Links1,New_Links2],Bag_Of_All_New_Links),
+            % sort all, mostly to remove duplicates where the same node or link is reached in different ways
+            sort(Bag_Of_All_New_Parents,All_New_Parents),
+            sort(Bag_Of_All_New_Links,All_New_Links),
+            !
+        ;   
+            find_immediate_higher_level_parents(Rest,Nodes_Visited,Links_Visited,All_New_Parents,All_New_Links),!
+        ).
 
-find_immediate_higher_level_parents([],Visited,[]).
+find_immediate_higher_level_parents([],Nodes_Visited,Links_Visted,Nodes_Visited,Links_Visted).
 
 % note_new_parent currently just prints out a new parent,
 % indented according to its level.
@@ -1329,6 +1344,37 @@ note_new_parent(Parent,Distance) :-
         repeat_indent(Distance),
         print(Parent),
         nl.
+
+% find_new_parents_for_resource(+Resource,+Visited,-New_Parents) is det
+% Simply finds all new immediate parents of the Resource that are
+% not in Visited. Example call, to just print links:
+% find_new_parents_for_resource(yago:'Bill_Murray',[yago:'Bill_Murray'],[],X,Y),print_all(Y).
+% Note: find_new_parents_for_resource fails if Resource has no parents or they have all been visited.
+
+:- rdf_meta find_new_parents_for_resource(r,t,t,-,-).
+
+find_new_parents_for_resource(Resource,Nodes_Visited,Links_Visited,New_Parents,New_Links) :-
+        setof(New_Parent-New_Link,find_new_parent(Resource,Nodes_Visited,Links_Visited,New_Parent,New_Link),New_Parents_And_Links),
+        zip(New_Parents,New_Links,New_Parents_And_Links),
+        !.
+
+:- rdf_meta find_new_parent(r,t,t,r,r).
+
+% find_new_parent finds a next layer parent for Resource.
+% find_new_parent(+Resource,+Visited,-New_Parent) is multi
+% We assume Resource is part of Visited, along with other previously seen parents.
+
+find_new_parent(Resource,Nodes_Visited,Links_Visited,New_Parent,New_Link) :-
+        rdf(Resource,rdf:'type',New_Parent),
+        New_Link = [Resource,rdf:'type',New_Parent],
+        (   not(memberchk(New_Parent,Nodes_Visited));
+            not(memberchk(New_Link,Links_Visited)) ).
+
+find_new_parent(Resource,Nodes_Visited,Links_Visited,New_Parent,New_Link) :-
+        rdf(Resource,rdfs:'subClassOf',New_Parent),
+        New_Link = [Resource,rdf:'subClassOf',New_Parent],
+        (   not(memberchk(New_Parent,Nodes_Visited));
+            not(memberchk(New_Link,Links_Visited)) ).
 
 % GeoNames experiments, if GeoNames is loaded.
 find_label_Denver(Label) :- rdf('http://yago-knowledge.org/resource/geoentity_Denver_2169039',rdfs:'label',Label).
@@ -1508,6 +1554,38 @@ where_is(Name,Lat_Out,Long_Out) :-
         ensure_is_number(Lat,Lat_Out),
         rdf(GeoEntity,yago:'hasLongitude',Long^^yago:'degrees'),
         ensure_is_number(Long,Long_Out).
+
+/* find_location finds the ultimate location of a resource by
+    following all yago:'isLocatedIn' links to the last one.
+    E.g., with 'Ulm' the country returned is 'Germany'.
+
+find_country_location(+Place,-Country) is semi det
+
+Both Place and Country should be resources, not names.   
+
+Country should be a country.
+
+Works with yago:'Ulm', yago:'Denver', but not yago:'Sydney',
+which returns New South Wales. Close!
+
+WRM -- to do:
+
+Will have to further refine with GeoNames... to only pick up
+countries.
+   
+*/
+
+:- rdf_meta find_country_location(r,-).
+
+find_country_location(Place,Place) :-
+        not(rdf(Place,rdf:type,yago:'wordnet_city_108524735')),
+        not(rdf(Place,rdf:type,yago:'wordnet_region_108630039')),
+        rdf(Place,rdf:type,yago:'wordnet_country_108544813').
+
+find_country_location(Place,Country):-
+        rdf(Place,yago:'isLocatedIn',Where),
+        !,
+        find_country_location(Where,Country).
 
 /* Saved for YAGO 2 and beyond, where we have lat / long info
 

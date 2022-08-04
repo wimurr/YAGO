@@ -1,0 +1,14 @@
+# File types to ignore
+*.pyc
+*.dmg
+*.zip
+*.tar
+TAGS
+
+# Directories to ignore
+**/Backups/**
+**/Backup JSON/**
+**/Rubrics/**
+**/Saved Data/**
+**/.ipynb_checkpoints/**
+

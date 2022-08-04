@@ -8,7 +8,7 @@
 */  
 
 % print_all/1 prints each element in a list on a separate line with a number. The list can contain any kinds of items.
-print_all(List) :- print_all(List,1).
+print_all(List) :- print_all(List,1), !.
 print_all([],_).
 print_all([Item|Rest],Index) :-
         format("~d. ",[Index]),
@@ -89,6 +89,27 @@ uniquify([First|RestOfBag],[First|RestOfSet]) :-
         uniquify(Updated,RestOfSet),!.
 uniquify([First|RestOfBag],[First|RestOfSet]) :-
         uniquify(RestOfBag,RestOfSet).
+
+
+/* zip
+
+This Prolog zip is like Python's zip and can also work either forwards or backwards:
+
+?- zip([1,2,3],[a,b,c],X).
+X = [1-a, 2-b, 3-c].
+
+?- zip(X,Y,[1-a, 2-b, 3-c]).
+X = [1, 2, 3],
+Y = [a, b, c].
+
+*/
+
+
+zip([],[],[]).
+zip([X],[Y],[X-Y]).
+zip([X|Rest1],[Y|Rest2],[X-Y|Rest]) :-
+        zip(Rest1,Rest2,Rest),
+        !.
 
 % ensure_atom/2 converts the input to an atom, if necessary, when we wish to allow input to be
 % either an atom, number, or string.
@@ -209,3 +230,20 @@ atom_spaces_to_underscores(With_Spaces,With_Underscores) :-
         atomic_list_concat(Words,' ',With_Spaces),
         atomic_list_concat(Words,'_',With_Underscores).
 
+/* find_resource_with_string_in_label(+Substring,-Resource)
+
+finds all relevant resources where Substring occurs in their label and
+returns them one by one.
+
+Useful when we don't know exactly what we're looking for.
+
+Examples:   
+
+find_resource_with_string_in_label("USA",Resource)
+
+find_resource_with_string_in_label("cat",Resource)   
+
+*/
+
+find_resource_with_string_in_label(Substring,Resource,Label) :-
+        rdf(Resource,rdfs:label,Label@eng),sub_string(Label,_Before,_Length,_After,Substring).

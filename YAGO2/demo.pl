@@ -51,13 +51,13 @@ demo10 :-
 demo11 :-
         format('All YAGO 2 ontology ancestors of Bill Murray.~n'),
         get_yago_resource('Bill Murray',Yago_Resource),
-        find_all_parents(Yago_Resource,Ancestors),
+        show_all_parents(Yago_Resource),
         print_all(Ancestors).
 
 demo12 :-
         format('All YAGO 2 ontology ancestors of Abraham Lincoln.~n'),
         get_yago_resource('Abraham Lincoln',Yago_Resource),
-        find_all_parents(Yago_Resource,Ancestors),
+        show_all_parents(Yago_Resource),
         print_all(Ancestors).
 
 demo13 :-

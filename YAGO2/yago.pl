@@ -78,7 +78,13 @@ add_meta_facts :- fast_load_yago_files([yagoMetaFacts]).
 
 add_skippable_yago :- fast_load_yago_files([yagoMultilingualInstanceLabels,yagoDBPediaInstances,yagoDBPediaClasses,yagoMultilingualClassLabels,yagoGeonamesEntityIds,yagoGeonamesClassIds]).
 
-load_basic_yago_with_Wordnet :-
+load_full_yago_with_wordnet :-
+        load_full_yago,
+        load_core_yago,
+        add_wordnet_domains,
+        add_cheap_additional_useful_info.
+
+load_basic_yago_with_wordnet :-
         load_basic_yago,
         load_core_yago,
         add_wordnet_domains,
@@ -124,11 +130,11 @@ number_of_cores(Cores) :-
 % all cores available. To do this, it first expands file names with expand_yago_filenames.
 fast_load_yago_files(Files) :-
         length(Files,N),
-        format("Loading ~d Yago files ~w.~n",[N,Files]),
         file_search_path(yago,Yago_Dir),
         expand_file_search_paths(Yago_Dir,Files,Expanded_File_Names),
         number_of_cores(N_Cores),
-        rdf_load(Expanded_File_Names,[concurrent(N_Cores)]),
+        format("Loading ~d Yago files ~w. Using ~d cores. ~n",[N,Files,N_Cores]),
+        rdf_load(Expanded_File_Names,[if(not_loaded), concurrent(N_Cores)]),
         format("Finished loading ~d Yago files ~w!~n",[N,Files]).        
 
 % expand_file_search_paths(+Yago_Dir,+Files,-Filepaths) expands Yago file name such

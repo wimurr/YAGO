@@ -69,6 +69,7 @@ for triples like:
 ...
 
 5. Remove vertical bars in yagoGeonamesData:
+Replace "_|_" with "_or_"
 
 ...
 <die_|_brueckenschlaeger>	<hasLatitude>	"52.54482"^^<degrees> .
