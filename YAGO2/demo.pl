@@ -51,14 +51,12 @@ demo10 :-
 demo11 :-
         format('All YAGO 2 ontology ancestors of Bill Murray.~n'),
         get_yago_resource('Bill Murray',Yago_Resource),
-        show_all_parents(Yago_Resource),
-        print_all(Ancestors).
+        show_all_parents(Yago_Resource).
 
 demo12 :-
         format('All YAGO 2 ontology ancestors of Abraham Lincoln.~n'),
         get_yago_resource('Abraham Lincoln',Yago_Resource),
-        show_all_parents(Yago_Resource),
-        print_all(Ancestors).
+        show_all_parents(Yago_Resource).
 
 demo13 :-
         format('YAGO 2 ontology, locations of places.~n'),
@@ -74,4 +72,14 @@ demo15 :-
         % Includes Einstein.
         show_all_people_born_between(1879,1880).
 
+demo16 :-
+        format('YAGO 2 ontology, showing ancestor subgraphs for different resources.~n'),
+        forall(member(X,
+                      ['Bill Murray', 'Abraham Lincoln', 'Fort Collins, Colorado', 'Albert Einstein']),
+               (   get_yago_resource(X,Y),
+                   format("Saving ancestor graph for '~w', resource '~w'.~n",[X,Y]),
+                   export_subject_graph(Y)
+               )).
 
+
+              

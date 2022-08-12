@@ -1364,15 +1364,24 @@ find_new_parents_for_resource(Resource,Nodes_Visited,Links_Visited,New_Parents,N
 % find_new_parent(+Resource,+Visited,-New_Parent) is multi
 % We assume Resource is part of Visited, along with other previously seen parents.
 
+% Resource is an instance of some type, New_Parent.
 find_new_parent(Resource,Nodes_Visited,Links_Visited,New_Parent,New_Link) :-
         rdf(Resource,rdf:'type',New_Parent),
         New_Link = [Resource,rdf:'type',New_Parent],
         (   not(memberchk(New_Parent,Nodes_Visited));
             not(memberchk(New_Link,Links_Visited)) ).
 
+% Resource is a subclass of another class, New_Parent.
 find_new_parent(Resource,Nodes_Visited,Links_Visited,New_Parent,New_Link) :-
         rdf(Resource,rdfs:'subClassOf',New_Parent),
         New_Link = [Resource,rdf:'subClassOf',New_Parent],
+        (   not(memberchk(New_Parent,Nodes_Visited));
+            not(memberchk(New_Link,Links_Visited)) ).
+
+% Resource has a WordNet domain, New_Parent.
+find_new_parent(Resource,Nodes_Visited,Links_Visited,New_Parent,New_Link) :-
+        rdf(Resource,yago:'hasWordnetDomain',New_Parent),
+        New_Link = [Resource,yago:'hasWordnetDomain',New_Parent],
         (   not(memberchk(New_Parent,Nodes_Visited));
             not(memberchk(New_Link,Links_Visited)) ).
 

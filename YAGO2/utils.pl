@@ -247,3 +247,51 @@ find_resource_with_string_in_label("cat",Resource)
 
 find_resource_with_string_in_label(Substring,Resource,Label) :-
         rdf(Resource,rdfs:label,Label@eng),sub_string(Label,_Before,_Length,_After,Substring).
+
+
+
+
+/* drop_rdf_prefix(+Resource,-Main_Part)
+
+drops a URL prefix and just returns the main part.
+
+Examples:   
+
+?- split_off_prefix(yago:'Abraham_Lincoln',X,Y).
+X = yago,
+Y = 'Abraham_Lincoln'.
+
+?- split_off_prefix(rdfs:'subClassOf',,X,Y).
+X = rdfs,
+Y = subClassOf.   
+
+?- split_off_prefix('http://yago-knowledge.org/resource/Bill',X,Y).
+X = yago,
+Y = 'Bill'.
+
+N.B. This is a case where we DO NOT WANT TO USE
+
+   :- rdf_meta drop_rdf_prefix(r,_).
+
+since then the code no longer works.
+
+*/
+
+% here URI is a compound such as yago:'Bill_Murray'
+split_off_prefix(URI,Prefix,Main_Part) :-
+        compound(URI),
+        URI =.. [:, Prefix, Main_Part],
+        !.
+
+% here URI has been expanded to an atom such as: 'http://yago-knowledge.org/resource/Bill_Murray'
+split_off_prefix(URI,Prefix,Main_Part) :-
+        atom(URI),
+        rdf_current_prefix(Prefix,Expansion),
+        atom_concat(Expansion,Main_Part,URI),
+        !.
+
+% here we have failed to shear off any prefix:
+split_off_prefix(URI,_,URI) :-
+        !.
+
+
