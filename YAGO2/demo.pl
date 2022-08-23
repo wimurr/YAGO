@@ -81,5 +81,13 @@ demo16 :-
                    export_subject_graph(Y)
                )).
 
+demo17 :-
+        format('YAGO 2 ontology, showing topics and reasons why for resources.~n'),
+        forall(member(X,
+                      ['Bill Murray', 'Abraham Lincoln', 'Fort Collins, Colorado', 'Albert Einstein']),
+               (   get_yago_resource(X,Y),
+                   show_wordnet_topic_pairs(Y)
+               )).
+
 
               

@@ -296,7 +296,6 @@ get_all_facts_for_name(Name) :- best_show_facts_best_first(Name).
 % find_relations(-X,-Y,+Name)
 describe_name(X,Y,Name) :-
         best_resource_for_name(Name,Resource),
-
         rdf(X,Y,Resource),
         not(memberchk(Y,['http://www.w3.org/2000/01/rdf-schema#label',
                          'http://yago-knowledge.org/resource/redirectedFrom',
@@ -1384,6 +1383,55 @@ find_new_parent(Resource,Nodes_Visited,Links_Visited,New_Parent,New_Link) :-
         New_Link = [Resource,yago:'hasWordnetDomain',New_Parent],
         (   not(memberchk(New_Parent,Nodes_Visited));
             not(memberchk(New_Link,Links_Visited)) ).
+
+% Queries that build on find_all_parents. Some of these could be rewritten
+% more directly, but I just use find_all_parents for now for convenience.
+
+:- rdf_meta wordnet_topic_pairs(r,-).
+
+% wordnet_topic_pairs(+Resource,-Topics) is det.
+% returns one or more WordNet topics found.
+% example: wordnet_topics(yago:'Bill_Murray',Topics)
+
+wordnet_topic_pairs(Resource,Wordnet_Domain_Topic_Pairs) :-
+        find_all_parents(Resource,All_Parents,All_Links),
+        exclude(is_owl_thing_link,All_Links,Cleaned_Links),
+        findall(Ancestor-Topic,member([Ancestor,yago:'hasWordnetDomain',Topic],Cleaned_Links),Wordnet_Domain_Topic_Pairs),
+        !.            
+
+:- rdf_meta show_wordnet_topic_pairs(r).
+
+show_wordnet_topic_pairs(Resource) :-
+        wordnet_topic_pairs(Resource,Pairs),
+        !,
+        forall(member(Pair,Pairs),
+        (   Pair = Ancestor-Topic,
+            pretty_print_resource(Resource,Resource_PP),
+            pretty_print_resource(Ancestor,Ancestor_PP),
+            pretty_print_resource(Topic,Topic_PP),
+            format("Ancestor '~w' of '~w' has WordNet topic '~w'.~n",[Ancestor_PP,Resource_PP,Topic_PP])
+        )).
+
+% wordnet_topics(+Resource,-Topics) is det.
+% returns one or more WordNet topics found.
+% example: wordnet_topics(yago:'Bill_Murray',Topics)
+
+:- rdf_meta wordnet_topics(r,-).
+
+wordnet_topics(Resource,Wordnet_Domain_Topics) :-
+        find_all_parents(Resource,All_Parents,All_Links),
+        exclude(is_owl_thing_link,All_Links,Cleaned_Links),
+        findall(Topic,member([_,yago:'hasWordnetDomain',Topic],Cleaned_Links),All_Wordnet_Domain_Topics),
+        sort(All_Wordnet_Domain_Topics,Wordnet_Domain_Topics),
+        !.
+
+:- rdf_meta is_owl_thing_link(r).
+
+%  ['http://www.w3.org/2002/07/owl#Thing', yago:hasWordnetDomain, 'http://yago-knowledge.org/resource/wordnetDomain_factotum']
+% is_owl_thing_link(Link) is nondet, succeeds if link states that owl:'thing' has a certain WordNet domain.
+
+is_owl_thing_link(Link) :-
+        Link = ['http://www.w3.org/2002/07/owl#Thing', yago:hasWordnetDomain, _].
 
 % GeoNames experiments, if GeoNames is loaded.
 find_label_Denver(Label) :- rdf('http://yago-knowledge.org/resource/geoentity_Denver_2169039',rdfs:'label',Label).

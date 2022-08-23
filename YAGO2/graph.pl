@@ -134,13 +134,21 @@ graph(Nodes, Links)
 % Now we can load it as a library package.
 :- [library(gv)].
 
+% Notes: I'm not sure why I can't get this to provide directed graphs, but when I follow
+% the syntax in the demo programs, adding a third argument
+% options{directed: true} to gv_export below it throws an error. Perhaps some syntactic
+% conflict with the rdf lib capabilities of specifying queries in parentheses, too??
+
 :- rdf_meta export_subject_graph(r).
 
 % example: export_subject_graph(yago:'Bill_Murray').
 export_subject_graph(Subject) :-
         split_off_prefix(Subject,_,Main_Part),
         atom_concat(Main_Part,'.svg',File_Name),
-        gv_export(File_Name, {Subject}/[Out]>>export_subgraph(Out,Subject), options{directed:false}).
+        gv_export(
+                  File_Name,
+                  {Subject}/[Out]>>export_subgraph(Out,Subject)
+                 ).
 
 % example: export_subject_graph(yago:'Bill_Murray').
 export_subject_graph_w_undirected_links(Subject) :-
@@ -185,11 +193,12 @@ get_node_id(Node,[_|Rest],Id) :-
 :- rdf_meta get_node_id(-,t,t).
 
 add_edges(Out,[Link|Rest],Pairs) :-
-        Link = [S,_,O],
+        Link = [S,Relation,O],
         get_node_id(S,Pairs,S_id),
         get_node_id(O,Pairs,O_id),
         % format("Added edge from node ~w, id ~w to node ~w, id ~w.~n",[S,S_id,O,O_id]),
-        dot_edge_id(Out, S_id, O_id),
+        split_off_prefix(Relation,_,Main_Part),
+        dot_edge_id(Out, S_id, O_id,[label(Main_Part)]),
         !,
         add_edges(Out,Rest,Pairs).
 

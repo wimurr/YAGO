@@ -52,6 +52,12 @@ repeat_indent(N) :-
 */  
 
 
+% can_be_number(+N) succeeds if N can be
+% turned into a number or is one already, otherwise
+% it fails.
+
+can_be_number(N) :- ensure_is_number(N,_).
+
 % ensure_is_number(+In,-Out) is det
 % converts In to a number if possible,
 % if it is not one already.
@@ -76,6 +82,9 @@ ensure_is_number(N,N) :- fail.
                    LIST MANIPULATION
 
 */  
+
+% N.B. that swi-prolog allows you to use both sort/2 or list_to_set/2
+% as built in equivalents!
 
 % return_unique returns unique elements from Bag, one a time.
 return_unique(Bag,Next_Unique) :- uniquify(Bag,Set),!,member(Next_Unique,Set).
@@ -230,6 +239,34 @@ atom_spaces_to_underscores(With_Spaces,With_Underscores) :-
         atomic_list_concat(Words,' ',With_Spaces),
         atomic_list_concat(Words,'_',With_Underscores).
 
+/* atom_underscores_to_spaces_dropping_numbers/2
+   changes the underscores to spaces within an atom and ALSO
+   drops any parts that are just numbers, so
+   atom_underscores_to_spaces_dropping_numbers(''wordnet_humanitarian_ 110191613',X).
+   X = 'wordnet humanitarian',X).
+*/
+
+atom_underscores_to_spaces_dropping_numbers(With_Underscores,With_Spaces) :-
+        atomic_list_concat(Words,'_',With_Underscores),
+        drop_numbers_from_list(Words,Words_Without_Numbers),
+        atomic_list_concat(Words_Without_Numbers,' ',With_Spaces).
+
+/* drop_numbers_from_list(+Words,-Without_Numbers) is det
+It just strips out numbers, or strings or atoms that can be numbers,
+from the input, and returns the rest.   
+*/  
+
+drop_numbers_from_list([Word|Words],Words_Without_Numbers) :-
+        can_be_number(Word),
+        drop_numbers_from_list(Words,Words_Without_Numbers),
+        !.
+
+drop_numbers_from_list([Word|Words],[Word|Words_Without_Numbers]) :-
+        drop_numbers_from_list(Words,Words_Without_Numbers),
+        !.
+
+drop_numbers_from_list([],[]).
+
 /* find_resource_with_string_in_label(+Substring,-Resource)
 
 finds all relevant resources where Substring occurs in their label and
@@ -247,9 +284,6 @@ find_resource_with_string_in_label("cat",Resource)
 
 find_resource_with_string_in_label(Substring,Resource,Label) :-
         rdf(Resource,rdfs:label,Label@eng),sub_string(Label,_Before,_Length,_After,Substring).
-
-
-
 
 /* drop_rdf_prefix(+Resource,-Main_Part)
 
@@ -294,4 +328,16 @@ split_off_prefix(URI,Prefix,Main_Part) :-
 split_off_prefix(URI,_,URI) :-
         !.
 
+:- rdf_meta pretty_print_resource(r,_).
 
+pretty_print_resource(Resource,Description_With_Spaces) :-
+        split_off_prefix(Resource,_,Main_Part),
+        atom_underscores_to_spaces_dropping_numbers(Main_Part,Description_With_Spaces),
+        !.
+
+pretty_print_resource(Resource,Main_Part) :-
+        split_off_prefix(Resource,_,Main_Part),
+        !.
+
+pretty_print_resource(Resource,Resource) :-
+        !.
