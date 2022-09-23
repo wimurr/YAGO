@@ -82,13 +82,13 @@ find_distance_from_radians(Lat1,Long1,Lat2,Long2,Distance) :-
   Product2 is cos(Lat1)*sin(Long1)*cos(Lat2)*sin(Long2),
   Product3 is sin(Lat1)*sin(Lat2),
   Sum is Product1 + Product2 + Product3,
-  print('acos('),
-  print(Product1),
-  print('+'),
-  print(Product2),
-  print('+'),
-  print(Product3),
-  print(') = '),
+  % print('acos('),
+  % print(Product1),
+  % print('+'),
+  % print(Product2),
+  % print('+'),
+  % print(Product3),
+  % print(') = '),
   Arc_cosine is acos(Product1 + Product2 + Product3)
   Distance is Arc_cosine * 6371.0.
 
@@ -113,6 +113,13 @@ degrees_to_radians(degrees, radians) :- radians = degrees*(pi/180.0)
 convert_degrees_to_radians(Degrees,Radians) :- Radians is Degrees * (pi/180.0).
 
 find_distance_from_angular_degrees(Deg_Lat1,Deg_Long1,Deg_Lat2,Deg_Long2,Distance) :- 
+        ensure_is_number(Deg_Lat1,Deg_Lat1N),
+        ensure_is_number(Deg_Long1,Deg_Long1N),
+        ensure_is_number(Deg_Lat2,Deg_Lat2N),
+        ensure_is_number(Deg_Long2,Deg_Long2N),                
+        find_distance_from_angular_degrees_ensured_numbers(Deg_Lat1N,Deg_Long1N,Deg_Lat2N,Deg_Long2N,Distance).
+
+find_distance_from_angular_degrees_ensured_numbers(Deg_Lat1,Deg_Long1,Deg_Lat2,Deg_Long2,Distance) :- 
     convert_degrees_to_radians(Deg_Lat1,Lat1),
     convert_degrees_to_radians(Deg_Long1,Long1),
     convert_degrees_to_radians(Deg_Lat2,Lat2),
@@ -123,156 +130,57 @@ find_distance_from_angular_radians(Lat1,Long1,Lat2,Long2,Distance) :-
   Product1 is cos(Lat1)*cos(Long1)*cos(Lat2)*cos(Long2),
   Product2 is cos(Lat1)*sin(Long1)*cos(Lat2)*sin(Long2),
   Product3 is sin(Lat1)*sin(Lat2),
-  print('acos('),
-  print(Product1),
-  print('+'),
-  print(Product2),
-  print('+'),
-  print(Product3),
-  print(') = '),
   Arc_cosine is acos(Product1 + Product2 + Product3),
-  Distance is Arc_cosine * 6371.0,
-  print(Distance),nl.
+  Distance is Arc_cosine * 6371.0.
 
-/* find_location/3 finds the latitude and longitude of a location
-by leveraging GeoNames triples such as these:
-
-<geoentity_Denver_2169039>	rdfs:label	"Denver"@eng .
-<geoentity_Denver_2169039>	<hasLatitude>	"-37.26667"^^<degrees> .
-<geoentity_Denver_2169039>	<hasLongitude>	"144.3"^^<degrees> .
-
-Unfortunately, lookup/2 can return the wrong 'Denver' so find_city/3
-is better for cities.
-
+/* find_location/3 finds the latitude and longitude of a 
+place name.
 */
 
-find_location(Name,Latitude,Longitude) :-
-        lookup(Name,Resource),
-        rdf(Resource,yago:'hasLatitude',literal(Latitude)),
-        rdf(Resource,yago:'hasLongitude',literal(Longitude)).                                          
-                                             
+find_location(Name,Lat,Long) :-
+        best_resource_for_name(Name,Resource),
+        find_resource_lat_long(Resource,Lat,Long).
 
-/* find_city/4 finds the latitude and longitude of a city
-by leveraging GeoNames triples such as these:
+:- rdf_meta find_resource_lat_long(r,-,-).
 
-<Denver%2C_Colorado>	owl:sameAs	<http://sws.geonames.org/5419384> .
-
-since, unfortunately, there are many "Denver"-named cities,
-so we have to be more specific as find_location/3 will otherwise
-find the wrong coordinates.
-
-<geoentity_Denver_5419384>	rdfs:label	"Denver"@eng .
-<geoentity_Denver_5419384>	<hasLatitude>	"39.73915"^^<degrees> .
-<geoentity_Denver_5419384>	<hasLongitude>	"-104.9847"^^<degrees> .
-<geoentity_Denver_5419384>	<hasGeonamesEntityId>	"5419384" 
-
-25 ?- find_city('Denver','Colorado',Lat,Long).
-Lat = type(yago:degrees, '39.73915'),
-Long = type(yago:degrees, '-104.9847').
-
-*/
-
-find_city(City_Name,State_Name,Latitude,Longitude) :- find_city_resource(City_Name,State_Name,Resource),
-                                                      link_resource_to_location(Resource,Latitude,Longitude).
+find_resource_lat_long(Resource,Lat,Long) :-
+        rdf(Resource,yago:'hasLatitude',Lat^^yago:'degrees'),
+        rdf(Resource,yago:'hasLongitude',Long^^yago:'degrees'),
+        !.
 
 /*
+find_city_resource/3 returns the YAGO resource for a (city,state) combination
+if it can be identified by its label. E.g., find_from_label('Seattle','Washington',X)
+returns yago:'Seattle, Washington' if there is such a resource.
 
-yago('Seattle',Seattle),link_resource_to_location(Seattle,X,Y).
-yago('Denver',Denver),link_resource_to_location(Denver,X,Y).
+Many times only a single label is required (e.g., 'Denver', 'Seattle', 'Fort Collins'
+and we can just call find_location directly.
 
-*/
+Other times, two names are needed. E.g., if we just use 'Durango' we get the
+Mexican state, instead we need 'Durango, Colorado' to get that city.
 
-link_resource_to_location(Resource,Latitude,Longitude) :- link_yago_to_geonames(Resource,GeoNames),
-                                                          get_geonames_entity_ID(GeoNames,EntityID),
-                                                          get_geoentity_resource(EntityID,GeoEntity),
-                                                          rdf(GeoEntity,yago:'hasLatitude',literal(type(_, Latitude))),
-                                                          rdf(GeoEntity,yago:'hasLongitude',literal(type(_, Longitude))).                                                                                                
-
-/*
-   To get the entity ID for geonames from a resource such as http://sws.geonames.org/5419384,
-drop the first part.
-
-Example: get_geonames_entity_ID('http://sws.geonames.org/5419384','5419384').
-*/
-
-get_geonames_entity_ID(GeoNames,EntityID) :- atom_concat('http://sws.geonames.org/',EntityID,GeoNames).
-
-/* 
-  To get geoentity given the entity ID for geonames find the geoentity with the ID given.
-
-   Given "5419384" -->
-
-   <geoentity_Denver_5419384>	<hasGeonamesEntityId>	'5419384'
-
-Example: get_geoentity_resource('5419384',yago:'geoentity_Denver_5419384').
-
-*/
-
-get_geoentity_resource(EntityID,GeoEntity) :- rdf(GeoEntity,yago:'hasGeonamesEntityId',literal(EntityID)).
-
-/*
-find_city_resource/3 returns the YAGO resource for a (city,state) combination.
 */
 
 find_city_resource(City_Name,State_Name,Resource) :-
-        atom_concat(City_Name,'%2C_',City_and_Comma),
-        atom_concat(City_and_Comma,State_Name,City_and_State),
-        yago(City_and_State,Resource).
+        atomic_list_concat([City_Name,', ',State_Name],City_and_State),
+        get_yago_resource(City_and_State,Resource).
 
 /*
-find_from_redirect/3 returns the YAGO resource for a (city,state) combination
-if there is a redirect link listed for it from its label.
-*/
-
-find_from_redirect(City_Name,State_Name,Resource) :-
-        atom_concat(City_Name,', ',City_and_Comma),
-        atom_concat(City_and_Comma,State_Name,City_and_State),
-        rdf(Resource,yago:redirectedFrom,literal(lang(_,City_and_State))).
-
-/*
-find_from_label/3 returns the YAGO resource for a (city,state) combination
-if it can be identified by its label.
-*/
-
-find_from_label(City_Name,State_Name,Resource) :-
-        atom_concat(City_Name,', ',City_and_Comma),
-        atom_concat(City_and_Comma,State_Name,City_and_State),
-        convert(City_and_State,Resource).
-
-/*
+Older code, only required if we need to go through geoname entity IDs to lat, long
+values, but that seems unnecessary. 
 
 link_yago_to_geonames(resource1,resource2) links a YAGO resource to
 its corresponding GeoNames Entity.
 
 yago('Seattle',Seattle),link_yago_to_geonames(Seattle,X).
 
-*/
-
 link_yago_to_geonames(YAGO,GeoNames) :- rdf(YAGO,owl:'sameAs',GeoNames).
-
-/* nearby/2 and nearby/3 provide a rough estimate of whether two
-places are near by to each other or not. We default to a distance
-of 30 km if the distance is not measured, just as YAGO does. */
-
-% X and Y are both (lat,long) pairs below.
-# nearby/2(+X,+Y)
-# nearby/3(+X,+Y,+Distance)
-nearby(X,Y) :- how_far_apart_are_locations(X,Y,Distance),Distance < 30.0.
-nearby(X,Y,Max_Separation) :- how_far_apart_are_locations((X,Y,Distance),Distance < Max_Separation.
 
 has_loc('Denver',39.76185,-104.881105).
 has_loc('Centennial',39.590568, -104.869118).
 has_loc('Durango',37.273267, -107.871692).
 has_loc('Seattle',47.609722, -122.333056).
 
-% X and Y are both (lat,long) pairs below.
-how_far_apart_are_locations(Name1,Name2,Distance) :-
-        has_loc(Name1,Lat1,Long1),
-        has_loc(Name2,Lat2,Long2),
-        find_distance_from_angular_degrees(Lat1,Long1,Lat2,Long2,Distance),
-        format('The distance from ~s and ~s is ~f kilometers.~n').
-
-/*
   how_far/3 finds the distance between two YAGO resources.
 
   Given two resources (e.g., cities) how_far finds how apart they are in kilometers, or
@@ -282,14 +190,48 @@ how_far_apart_are_locations(Name1,Name2,Distance) :-
 
   yago('Seattle',Seattle),yago('Denver',Denver),how_far(Seattle,Denver,Distance).
 
-*/
-
 how_far(Resource1,Resource2,Distance) :-
         link_resource_to_location(Resource1,Latitude1,Longitude1),
         link_resource_to_location(Resource2,Latitude2,Longitude2),
         find_distance_from_angular_degrees(Latitude1,Longitude1,
                                            Latitude2,Longitude2,
                                            Distance).
+
+*/
+
+
+/* nearby/2 and nearby/3 provide a rough estimate of whether two
+places are near by to each other or not. We default to a distance
+of 30 km if the distance is not measured, just as YAGO does. */
+
+% X and Y are both (lat,long) pairs below.
+% nearby/2(+X,+Y)
+% nearby/3(+X,+Y,+Distance)
+
+% In nearby_places we are given names.
+nearby_places(X,Y) :- how_far_apart_are_places(X,Y,Distance),Distance < 30.
+nearby_places(X,Y,Max_Separation) :- how_far_apart_are_places(X,Y,Distance),Distance < Max_Separation.
+
+:- rdf_meta nearby_resources(r,r).
+:- rdf_meta nearby_resources(r,r,+).
+
+% In nearby_resources we are given resources.
+nearby_resources(X,Y) :- how_far_apart_are_resources(X,Y,Distance),Distance < 30.
+nearby_resources(X,Y,Max_Separation) :- how_far_apart_are_resources(X,Y,Distance),Distance < Max_Separation.
+
+% Given place names, return how apart they are in kilometers.
+how_far_apart_are_places(Name1,Name2,Distance) :-
+        find_location(Name1,Lat1,Long1),
+        find_location(Name2,Lat2,Long2),
+        find_distance_from_angular_degrees(Lat1,Long1,Lat2,Long2,Distance),
+        format('The distance from ~s and ~s is ~f kilometers.~n').
+
+% Given resources, return how apart they are in kilometers.
+how_far_apart_are_resources(Resource1,Resource2,Distance) :-
+        find_resource_lat_long(Resource1,Lat1,Long1),
+        find_resource_lat_long(Resource2,Lat2,Long2),
+        find_distance_from_angular_degrees(Lat1,Long1,Lat2,Long2,Distance).
+
 /*
   Find out how far apart two cities are in kilometers.
 
@@ -331,17 +273,17 @@ fails as there does not appear to be a lat, long for Centennial.
 
 */
 
-how_far_apart_are_these_two_cities(City_Name1,State_Name1,City_Name2,State_Name2,Distance) :-
-        find_city(City_Name1,State_Name1,Latitude1,Longitude1),
-        format("~s, ~s has location ~s degrees latitude, ~s degrees longitude.~n",[City_Name1,State_Name1,Latitude1,Longitude1]),
-        find_city(City_Name2,State_Name2,Latitude2,Longitude2),
-        format("~s, ~s has location ~s degrees latitude, ~s degrees longitude.~n",[City_Name2,State_Name2,Latitude2,Longitude2]),
+how_far_apart_are_these_places(Name1,Name2,Distance) :-
+        find_location(Name1,Latitude1,Longitude1),
+        find_location(Name2,Latitude2,Longitude2),        
+        format(" ~w has location ~w degrees latitude, ~w degrees longitude.~n",[Name1,Latitude1,Longitude1]),
+        format(" ~w has location ~w degrees latitude, ~w degrees longitude.~n",[Name2,Latitude2,Longitude2]),        
         atom_number(Latitude1,Latitude1N),
         atom_number(Longitude1,Longitude1N),
         atom_number(Latitude2,Latitude2N),
         atom_number(Longitude2,Longitude2N),        
         find_distance_from_angular_degrees(Latitude1N,Longitude1N,Latitude2N,Longitude2N,Distance),
-        format("~s, ~s is ~f kilometers from ~s, ~s,",[City_Name1,State_Name1,City_Name2,State_Name2]).
+        format("~w is ~f kilometers distance in air miles from  ~w.~n",[Name1,Distance,Name2]).
 
 /*
 
@@ -357,7 +299,7 @@ D = 19.073298494882696
 
   Google says 22.4 km.
 
-29 ?- how_far("Denver","Durango",D).
+29 ?- how_far("Denver","Durango, Colorado",D).
 'acos('0.04821018604536946+0.5626620979051988+0.3873515399510835') = '379.7780992703726
 "The distance from ""Denver"" to ""Durango"" is "379.7780992703726" km."
 D = 379.7780992703726 
@@ -379,7 +321,7 @@ D = 1646.801745744498
 true.
 
 
-36 ?- nearby('Denver','Durango').
+36 ?- nearby('Denver','Durango, Colorado').
 'acos('0.04821018604536946+0.5626620979051988+0.3873515399510835') = '379.7780992703726
 'The distance from ''Denver'' to ''Durango'' is '379.7780992703726' km.'
 false.
@@ -396,34 +338,60 @@ yago('Colorado',Place),places_in(Place,Places).
 
 */
 
-places_in(Large_Place,Places) :- setof(Place,rdf(Place,yago:'isLocatedIn',Large_Place),Places).
+:- rdf_meta places_in(r,-).
+
+places_in(Large_Place,Places) :-
+        setof(Place,rdf(Place,yago:'isLocatedIn',Large_Place),Places).
 
 /* 
-
-yago('Colorado',State),cities_in(State,Cities).
-
+show_cities_in_state('Colorado').
 */
 
-cities_in(Large_Place,Cities) :- setof(City,city_in_place(City,Large_Place), Cities).
+show_cities_in_state(State_Name) :-
+        best_resource_for_name(State_Name,State),
+        cities_in(State,Cities),
+        length(Cities,N),
+        format("Found ~d cities in ~w:~n",[N,State_Name]),
+        print_all(Cities).
 
-city_in_place(City,Place) :- rdf(City,yago:'isLocatedIn',Place),
-                             rdf(City,rdf:'type',yago:'wordnet_administrative_district_108491826').
+:- rdf_meta cities_in(r,-).
 
-city_nearby(City1,Place,City2) :-
-        rdf(City1,yago:'isLocatedIn',Place),
-        rdf(City1,rdf:'type',yago:'wordnet_administrative_district_108491826'),
-        rdf(City2,yago:'isLocatedIn',Place),
-        not(City1 = City2),
-        rdf(City2,rdf:'type',yago:'wordnet_administrative_district_108491826'),
-        nearby(City1,City2,30.0).
+cities_in(Large_Place,Cities) :-
+        setof(City,city_in_place(City,Large_Place), Cities).
+
+:- rdf_meta city_in_place(r,r).
+
+city_in_place(City,Place) :-
+        rdf(City,rdf:'type',yago:'wordnet_city_108524735'),
+        rdf(City,yago:'isLocatedIn',Place).
+
+city_in_place(City,Place) :-
+        rdf(City,rdf:'type',yago:'wordnet_administrative_district_108491826'),
+        rdf(City,yago:'isLocatedIn',Place).
 
 /* cities_nearby/3 given a city and the state it is in will list other cities
-near by it in the same state.
+near by it in the same state, within Radius kilometers (air miles).
 
-yago('Denver',Denver),yago('Colorado',CO),cities_nearby(Denver,CO,Nearby)
+cities_nearby(yago:'Denver',yago:'Colorado',Nearby,40).
 
 */
 
-cities_nearby(City,State,Nearby_Cities) :- setof(Other_City,city_nearby(City,State,Other_City), Nearby_Cities).
+:- rdf_meta cities_nearby(r,r,-).
+
+cities_nearby(City,State,Nearby_Cities,Radius) :-
+        setof(Other_City,(city_in_place(Other_City,State),nearby_resources(City,Other_City,Radius)), Nearby_Cities).
+
+show_cities_nearby(City_Name,State_Name,Radius) :-
+        best_resource_for_name(City_Name,City),
+        best_resource_for_name(State_Name,State),
+        cities_in(State,Cities_In_State),
+        length(Cities_In_State,N),
+        format("Found ~d cities in ~w:~n",[N,State_Name]),
+        print_all(Cities_In_State),
+        findall(Other_City,(member(Other_City,Cities_In_State),nearby_resources(City,Other_City,Radius)),Other_Cities),
+        length(Other_Cities,K),
+        format("Found ~d cities in ~w  within ~d kilometers of ~w:~n",[K,State_Name,Radius,City_Name]),
+        print_resources(Other_Cities),
+        !.
 
 :- write('Code for computing distance from geographic locations loaded.'),nl.

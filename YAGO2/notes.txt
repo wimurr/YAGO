@@ -1205,3 +1205,53 @@ So, we need a regexp search limited to tags and with a match group for ^ that re
 
 (replace-regexp "\\(<[[:alnum:]_:.;#&!,'-/]+\\)\\(\\^\\)\\([[:alnum:]_:.;#&!,'-/]+>\\)" "\\1&#94;\\3")
 
+--------
+ATTEMPTS TO CLEAN WITH PYTHON CODE
+--------
+
+We eventually went with a Python solution that cleans all files *.pl in a file.
+
+It skips
+
+* yagoSources.ttl, the largest file {also note we do not need yagoTransitiveType as these can be determined on the fly}
+
+* lines starting with '#@'
+
+* and then cleans resources:
+
+...and cleans tags by removing characters that should not appear in a tag from the tag:
+
+   chars_to_strip_out = ["`{}<>]
+
+...and performs these replacements:
+
+    replacements = [('m^2','m**2'),('\n',''),('</','_'),('^','&#94;'),('\\','&#92;')]
+
+...and replaces multiple underscores with one...
+
+...and tosses lines if any tag is not yet cleaned and has illegal chars remaining
+
+* and any literals:
+
+--currently just by replacing m^2 with m**2
+
+--------
+DROPPING LESS RELEVANT INFO FOR LARGE COMPRESSION
+--------
+
+Drop lines
+
+    --where predicate is:
+
+# for yagoWikipediainfo -- should be huge gains
+yago:'linksTo'
+yago:'hasWikipediaArticleLength'
+
+# for yagoLabels
+rdfs:label
+skos:prefLabel
+
+# for yagoGeonamesData
+hasGeonamesEntityId
+rdfs:label
+     --and a non-English label

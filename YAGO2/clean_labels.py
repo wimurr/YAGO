@@ -1,3 +1,5 @@
+# -*- mode: Python; coding utf-8; fill-column: 100; -*-
+
 import re
 from pathlib import Path
 import time
@@ -15,13 +17,23 @@ Skips the files specified, e.g., we never need to know the source of the facts f
 a HUGE file.
 
 max_lines or max_files are used just during debugging, set to None otherwise.
+
+Just go to the ontology's directory and then call cleanup() to clean all files. 
+
+Or to clean one file, use as in this example: cleanup(pattern='yagoWikipediaInfo.ttl')
 '''
 
-def cleanup(dir=DEFAULT_DIR, pattern='yago*.ttl', files_to_skip=['yagoSources.ttl'],trace_file_name='label_cleaning_report.txt',
+def cleanup(dir=DEFAULT_DIR, pattern='yago*.ttl',
+            files_to_skip=['yagoSources.ttl'],
+            links_to_skip=['<linksTo>','<hasWikipediaArticleLength>'],
+            trace_file_name='label_cleaning_report.txt',
             max_lines=None, max_files=None, tracing=False):
+
     start_time = time.time()
     dir_path = Path(dir)
-    files_read = 0 # files
+    files_read = 0      # files
+    lines_read = 0     # lines read in the current file
+    lines_written = 0 # lines written from the current file to the cleaned version
 
     cleaning_trace_file = Path(dir_path / trace_file_name)
     with open(cleaning_trace_file,'w') as log_cleaning_messages:
@@ -39,9 +51,12 @@ def cleanup(dir=DEFAULT_DIR, pattern='yago*.ttl', files_to_skip=['yagoSources.tt
                 print(f"\n\nCleaning file: {short_name} to {cleaned_file_name}\n\n")
                 cleaned_file_path = Path(dir_path / cleaned_file_name)
                 i = 0 # line number in current file
+                lines_read = 0     # lines read in the current file
+                lines_written = 0 # lines written from the current file to the cleaned version
                 with open(cleaned_file_path,'w') as cleaned_file:
                     for line in file_to_clean:
                         i += 1
+                        lines_read += 1
                         if max_lines and (i > max_lines):
                             print(f"Finished {max_lines} lines for testing.")
                             break
@@ -57,6 +72,9 @@ def cleanup(dir=DEFAULT_DIR, pattern='yago*.ttl', files_to_skip=['yagoSources.tt
                         subject,predicate,object = triple_parts
                         clean_subject = clean_resource(subject)
                         clean_predicate = clean_resource(predicate)
+                        if clean_predicate in links_to_skip:
+                            # skip outputting triples from predicates we choose to leave out to save space.
+                            continue 
                         clean_object = clean_resource(object)
                         if clean_subject is None or clean_predicate is None or clean_object is None:
                             # Skip lines with resources where the tag is so bad we cannot clean it
@@ -69,6 +87,10 @@ def cleanup(dir=DEFAULT_DIR, pattern='yago*.ttl', files_to_skip=['yagoSources.tt
                             print(f"Now: '{cleaned_line}'")                        
                             print('\n')
                         cleaned_file.write(cleaned_line + '\n')
+                        lines_written += 1
+                    ratio = lines_written / lines_read
+                    log_cleaning_messages.write(f"Read {lines_read} lines from the original file, '{short_name}'. Wrote {lines_written} lines. Cleaned files is {ratio:.2%} of the original.")
+                    print(f"Read {lines_read} lines from the original file, '{short_name}'. Wrote {lines_written} lines. Cleaned files is {ratio:.2%} of the original.")
     end_time = time.time()
     print(f"Took {end_time - start_time:.2f} sec.")
 
@@ -98,7 +120,10 @@ example_resources_to_clean = [('<In_Your_Arms_(Love_song_from_"Neighbours")>','<
                                                    ('<wikicategory_Amusement_parks_in_{{{location2}}}>','<wikicategory_Amusement_parks_in_location2>'),
                                                    ('<Sufyan_ibn_`Uyaynah>','<Sufyan_ibn_Uyaynah>'),
                                                    ('<wikicategory_People_from_Ballarat</text\u003e\n______<sha1_/\u003e\n____</revision\u003e\n__</page>','<wikicategory_People_from_Ballarat/text_sha1_/_/revision_/page>'),
-                                                   ('<startedOnDate >','<startedOnDate>',)]
+                                                   ('<startedOnDate >','<startedOnDate>',),
+                                                   # The next examples should not be modified, so they are just here to double-check that.
+                                                   ('<War_of_1812 >','<War_of_1812>'),
+                                                   ("<Hundred_Years'_War>","<Hundred_Years'_War>")]
 
 def test_resource_cleanup():
     for resource,target_cleaned_resource in example_resources_to_clean:
@@ -182,9 +207,3 @@ def clean_literal(resource, tracing=False):
         return resource.replace("m^2","m**2")
     else:
         return resource
-    
-
-            
-
-
-

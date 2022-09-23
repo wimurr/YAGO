@@ -72,23 +72,35 @@ add_wordnet_domains :- fast_load_yago_files([yagoWordnetIds,yagoWordnetDomains])
 % Note: yagoWikipediaInfo is large: about 2.5 GB
 add_additional_useful_info :- fast_load_yago_files([yagoImportantTypes,yagoWikipediaInfo,yagoStatistics]).
 
-add_cheap_additional_useful_info :- fast_load_yago_files([yagoImportantTypes,yagoWordnetIds,yagoStatistics]).
+add_cheap_additional_useful_info :- fast_load_yago_files([yagoWikipediaInfo,yagoImportantTypes,yagoWordnetIds,yagoStatistics]).
 
 add_meta_facts :- fast_load_yago_files([yagoMetaFacts]).
 
 add_skippable_yago :- fast_load_yago_files([yagoMultilingualInstanceLabels,yagoDBPediaInstances,yagoDBPediaClasses,yagoMultilingualClassLabels,yagoGeonamesEntityIds,yagoGeonamesClassIds]).
 
 load_full_yago_with_wordnet :-
+        get_time(START),
         load_full_yago,
         load_core_yago,
         add_wordnet_domains,
-        add_cheap_additional_useful_info.
+        add_cheap_additional_useful_info,
+        get_time(END),
+        DELTA is END-START,
+        format("Loaded YAGO with full taxonomy, version 2, with WordNet in: ~2f sec.~n",[DELTA]),
+        improve_performance,
+        format("Ready to go!~n").
 
 load_basic_yago_with_wordnet :-
+        get_time(START),
         load_basic_yago,
         load_core_yago,
         add_wordnet_domains,
-        add_cheap_additional_useful_info.
+        add_cheap_additional_useful_info,
+        get_time(END),
+        DELTA is END-START,
+        format("Loaded  YAGO with basic taxonomy, version 2, with WordNet in: ~2f sec.~n",[DELTA]),
+        improve_performance,
+        format("Ready to go!~n").
 
 load_simple_taxonomy :- fast_load_yago_files(['yagoSimpleTypes','yagoSimpleTaxonomy']).
 
@@ -209,13 +221,17 @@ set_hash_parameters :-
       rdf_set(hash(sg,  size, 1048576)),
       rdf_set(hash(pg,  size, 2048)).
 
-optimize :- writeln('Warming indices...'),
-            time(warm_indexes),
-            writeln('Warming [s,p,o,sp,po] indices specifically...'),
-            time(rdf_warm_indexes([s,p,o,sp,po])),
-            writeln('GC and optimizing indices...'),
-            time(rdf_gc),
-            writeln('Ready to go now!').
+improve_performance :- 
+        writeln('Warming indices...'),
+        get_time(START),
+        time(warm_indexes),
+        writeln('Warming [s,p,o,sp,po] indices specifically...'),
+        time(rdf_warm_indexes([s,p,o,sp,po])),
+        writeln('GC and optimizing indices...'),
+        time(rdf_gc),
+        get_time(END),
+        DELTA is END-START,
+        format("Warmed RDF indices and performed an RDF GC in: ~2f sec.~n",[DELTA]).
 
 /* Add prefixes for:
 
@@ -266,6 +282,7 @@ warm_specific :-
 % to be loaded next will be correct if they use yago:, rdf:, etc.
 % :- [loading,queries,distance,time,tests,utils].
 
-:- [demo,queries].
+:- [demo,queries,graph,distance].
 
-:- write('Loaded YAGO code. To load the full YAGO 2 ontology, call load_yago.'),nl.
+:- write('Loaded YAGO code. To load the full YAGO 2 ontology with the complete taxonomy, along with WordNet additions, call load_full_yago_with_wordnet.'),nl.
+

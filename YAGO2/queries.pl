@@ -996,7 +996,7 @@ show_fact_part(Resource) :-
 
 show_fact_part(Compound):-
         not(atom(Compound)),
-        pretty_print_for(Short_Prefixed_Name,BestName),
+        pretty_print_for(Compound,BestName),
         write(BestName),!.
 
 % Handle literals
@@ -1701,10 +1701,11 @@ dates(Name,Predicate,Date) :-
         rdf(Concept,Predicate,literal(type(xsd:'date', Date))).
 
 % find WordNet types for a name or label
-wordnet(Name,WN_type) :- rdf(Concept,rdfs:'label',literal(exact(Name),_)),
-                         rdf(Concept,rdf:'type',Class),
-                         sub_atom(Class,_,_,_,'wordnet'),
-                         WN_type=Class.
+wordnet(Name,WN_type) :-
+        rdf(Concept,rdfs:'label',literal(exact(Name),_)),
+        rdf(Concept,rdf:'type',Class),
+        sub_atom(Class,_,_,_,'wordnet'),
+        WN_type=Class.
 
 % all_WN finds all wordnet categories for a label or name.
 /*
@@ -1757,3 +1758,7 @@ Literals
 % find_words(+Word,-ListOfLiterals) requires semweb/rdf_litindex to be loaded.
 find_words(Word,ListOfLiterals) :-
         rdf_find_literals(sounds(Word),ListOfLiterals).
+
+% get_wikipedia_page(+Name,-Page_URL) is semidet returns Wikipedia page,
+% if the Name labels a resource that has a Wikipedia page.
+get_wikipedia_page(Name,Page_URL) :- best_resource_for_name(Name,X),rdf(X,yago:'hasWikipediaUrl',Page_URL).

@@ -70,12 +70,13 @@ demo14 :-
 
 demo15 :-
         % Includes Einstein.
+        format('Show all people born between 1879 and 1880, which includes Albert Einstein.~n'),
         show_all_people_born_between(1879,1880).
 
 demo16 :-
-        format('YAGO 2 ontology, showing ancestor subgraphs for different resources.~n'),
+        format('YAGO 2 ontology, showing ancestor subgraphs for different people, places, and events.~n'),
         forall(member(X,
-                      ['Bill Murray', 'Abraham Lincoln', 'Fort Collins, Colorado', 'Albert Einstein']),
+                      ['Bill Murray', 'Abraham Lincoln', 'Fort Collins, Colorado', 'Albert Einstein','American Civil War','Battle of the Little Bighorn']),
                (   get_yago_resource(X,Y),
                    format("Saving ancestor graph for '~w', resource '~w'.~n",[X,Y]),
                    export_subject_graph(Y)
@@ -89,5 +90,15 @@ demo17 :-
                    show_wordnet_topic_pairs(Y)
                )).
 
+demo18 :-
+        format('YAGO 2 ontology, showing cities within 50 kilometers of Fort Collins.~n'),
+        show_cities_nearby('Fort Collins','Colorado',50).
 
-              
+demo19 :-
+        format('YAGO 2 ontology, showing Wikipedia pages for named resources.~n'),
+        forall(member(Name,
+                      ['Bill Murray', 'Abraham Lincoln', 'Fort Collins, Colorado', 'Operation Torch','Albert Einstein','American Civil War','Custer\'s Last Stand']),  % does not work for: 'War of 1812'
+               (   get_wikipedia_page(Name,Page_URL),
+                   format("The Wikipedia page for name '~w' is '~w'.~n",[Name,Page_URL])
+               )).
+

@@ -88,6 +88,7 @@ Replace "_|_" with "_or_"
 <Divino_Vino_|_Divino_Cibo>	rdfs:subClassOf	<geoclass_restaurant> .
 <Divino_Vino_|_Divino_Cibo>	<hasGeonamesEntityId>	"7288895" .
 
+6. Ignore triples with predicates we are suppressing, such as '<linksTo>' or '<hasWikipediaArticleLength>'.
 
 ------
 EXAMPLES OF CLEANUP

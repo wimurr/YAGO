@@ -17,6 +17,19 @@ print_all([Item|Rest],Index) :-
         Next is Index + 1,
         print_all(Rest,Next).
 
+% print_resources/1 prints each resource in a list on a separate line with a number. The list only contains RDF resources.
+% Each is printed with pretty_print_resource.
+
+print_resources(List) :- print_resources(List,1), !.
+print_resources([],_).
+print_resources([Item|Rest],Index) :-
+        pretty_print_resource(Item,Pretty_Item),    % Drop URI prefixes, change underscores to spaces, etc.
+        format("~d. ",[Index]),
+        print(Pretty_Item),    % When I use format here the prefixes are all expanded, so I use print instead.
+        nl,
+        Next is Index + 1,
+        print_resources(Rest,Next).
+
 % print_triples/1 prints each triple in a list on a separate line with a number
 % Each triple should be given as a [X,Y,Z] list.
 
@@ -327,6 +340,11 @@ split_off_prefix(URI,Prefix,Main_Part) :-
 % here we have failed to shear off any prefix:
 split_off_prefix(URI,_,URI) :-
         !.
+
+% pretty_print_resource converts a resource such as:
+% 'http://yago-knowledge.org/resource/Red_Feather_Lakes,_Colorado'
+% to a pretty display name, in this case: 'Red Feather Lakes, Colorado'
+% Note: it does not actually print anything, it just does the conversion.
 
 :- rdf_meta pretty_print_resource(r,_).
 
